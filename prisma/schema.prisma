@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  MANAGER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(MANAGER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings Booking[]
+  expenses Expense[]
+  accounts Account[]
+  sessions Session[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Booking {
+  id             String        @id @default(cuid())
+  customerName   String
+  customerPhone  String
+  startTime      DateTime
+  endTime        DateTime
+  status         BookingStatus @default(PENDING)
+  charge         Float         @default(500)
+  notes          String?       @db.Text
+  
+  createdById    String
+  createdBy      User          @relation(fields: [createdById], references: [id])
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([startTime, endTime])
+  @@index([status])
+  @@map("bookings")
+}
+
+enum ExpenseCategory {
+  MAINTENANCE
+  ELECTRICITY
+  WATER
+  STAFF_SALARY
+  EQUIPMENT
+  OTHER
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  title       String
+  description String?         @db.Text
+  amount      Float
+  category    ExpenseCategory @default(MAINTENANCE)
+  date        DateTime        @default(now())
+  
+  createdById String
+  createdBy   User            @relation(fields: [createdById], references: [id])
+  
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([date])
+  @@index([category])
+  @@map("expenses")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}

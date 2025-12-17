@@ -1,0 +1,153 @@
+import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { prisma } from '@/lib/prisma';
+
+export async function GET(request: Request) {
+  try {
+    // Authentication check
+    const session = await auth();
+    if (!session?.user || !session.user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Parse query parameters for pagination and filtering
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '100'))); // Max 100 items
+    const category = searchParams.get('category');
+    const skip = (page - 1) * limit;
+
+    // Build where clause
+    const where: any = {};
+    if (category) {
+      const validCategories = ['MAINTENANCE', 'ELECTRICITY', 'WATER', 'STAFF_SALARY', 'EQUIPMENT', 'OTHER'];
+      if (validCategories.includes(category)) {
+        where.category = category;
+      }
+    }
+
+    // Fetch expenses with pagination
+    const [expenses, total] = await Promise.all([
+      prisma.expense.findMany({
+        where,
+        include: {
+          createdBy: {
+            select: { 
+              name: true, 
+              email: true,
+              // Don't expose sensitive user data
+            },
+          },
+        },
+        orderBy: { date: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.expense.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      expenses,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching expenses:', error);
+    // Don't expose internal errors to client
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    // Authentication check
+    const session = await auth();
+    if (!session?.user || !session.user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Parse and validate request body
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
+
+    const { title, description, amount, category, date } = body;
+
+    // Input validation
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return NextResponse.json({ error: 'Valid title is required' }, { status: 400 });
+    }
+
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      return NextResponse.json({ error: 'Valid positive amount is required' }, { status: 400 });
+    }
+
+    // Validate category against allowed values
+    const validCategories = ['MAINTENANCE', 'ELECTRICITY', 'WATER', 'STAFF_SALARY', 'EQUIPMENT', 'OTHER'];
+    if (!category || !validCategories.includes(category)) {
+      return NextResponse.json({ error: 'Valid category is required' }, { status: 400 });
+    }
+
+    // Sanitize inputs
+    const sanitizedTitle = title.trim().slice(0, 255); // Limit length
+    const sanitizedDescription = description ? String(description).trim().slice(0, 1000) : null;
+    const sanitizedAmount = parseFloat(amount);
+
+    // Validate amount limits (prevent extreme values)
+    if (sanitizedAmount > 10000000) {
+      return NextResponse.json({ error: 'Amount exceeds maximum limit' }, { status: 400 });
+    }
+
+    // Validate and parse date
+    let expenseDate = new Date();
+    if (date) {
+      const parsedDate = new Date(date);
+      if (isNaN(parsedDate.getTime())) {
+        return NextResponse.json({ error: 'Invalid date format' }, { status: 400 });
+      }
+      // Prevent future dates beyond 1 day
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      if (parsedDate > tomorrow) {
+        return NextResponse.json({ error: 'Date cannot be in the future' }, { status: 400 });
+      }
+      expenseDate = parsedDate;
+    }
+
+    // Create expense with sanitized data
+    const expense = await prisma.expense.create({
+      data: {
+        title: sanitizedTitle,
+        description: sanitizedDescription,
+        amount: sanitizedAmount,
+        category,
+        date: expenseDate,
+        createdById: session.user.id,
+      },
+      include: {
+        createdBy: {
+          select: { name: true, email: true },
+        },
+      },
+    });
+
+    return NextResponse.json(expense, { status: 201 });
+  } catch (error) {
+    console.error('Error creating expense:', error);
+    // Don't expose internal errors to client
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
