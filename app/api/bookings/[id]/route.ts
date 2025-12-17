@@ -15,9 +15,10 @@ const bookingSchema = z.object({
 // PATCH - Update booking (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
 
     if (!session?.user) {
@@ -29,7 +30,7 @@ export async function PATCH(
 
     // Check if booking exists
     const existingBooking = await prisma.booking.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingBooking) {
@@ -42,7 +43,7 @@ export async function PATCH(
         AND: [
           {
             id: {
-              not: params.id,
+              not: id,
             },
           },
           {
@@ -72,7 +73,7 @@ export async function PATCH(
     }
 
     const booking = await prisma.booking.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         customerName: validatedData.customerName,
         customerPhone: validatedData.customerPhone,
@@ -111,9 +112,10 @@ export async function PATCH(
 // DELETE - Delete booking (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
 
     if (!session?.user) {
@@ -122,7 +124,7 @@ export async function DELETE(
 
     // Check if booking exists
     const existingBooking = await prisma.booking.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingBooking) {
@@ -130,7 +132,7 @@ export async function DELETE(
     }
 
     await prisma.booking.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: 'Booking deleted successfully' });

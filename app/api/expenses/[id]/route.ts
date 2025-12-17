@@ -4,9 +4,10 @@ import { prisma } from '@/lib/prisma';
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Authentication check
     const session = await auth();
     if (!session?.user || !session.user.id) {
@@ -14,13 +15,13 @@ export async function DELETE(
     }
 
     // Validate ID format (cuid format)
-    if (!params.id || typeof params.id !== 'string' || params.id.length < 20) {
+    if (!id || typeof id !== 'string' || id.length < 20) {
       return NextResponse.json({ error: 'Invalid expense ID' }, { status: 400 });
     }
 
     // Check if expense exists and user has permission
     const expense = await prisma.expense.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { id: true, createdById: true },
     });
 
@@ -35,7 +36,7 @@ export async function DELETE(
 
     // Delete the expense
     await prisma.expense.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: 'Expense deleted successfully' });
