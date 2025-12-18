@@ -29,8 +29,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
     }
 
-    // Authorization check - only allow creator or admin to delete
-    if (expense.createdById !== session.user.id && session.user.role !== 'ADMIN') {
+    // Authorization check - only allow creator or owner to delete
+    if (expense.createdById !== session.user.id && session.user.role !== 'OWNER') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -34,8 +34,8 @@ export default function AdminCalendar() {
       const calendarEvents: BookingEvent[] = bookings.map((booking) => ({
         id: booking.id,
         title: `${booking.customerName} - ${booking.status}`,
-        start: booking.startTime,
-        end: booking.endTime,
+        start: new Date(booking.startTime).toISOString(),
+        end: new Date(booking.endTime).toISOString(),
         className: `status-${booking.status.toLowerCase()}`,
         extendedProps: booking,
       }));

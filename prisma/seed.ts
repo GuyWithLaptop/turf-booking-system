@@ -59,7 +59,10 @@ async function main() {
 
   for (const booking of sampleBookings) {
     await prisma.booking.create({
-      data: booking,
+      data: {
+        ...booking,
+        status: booking.status as any,
+      },
     });
   }
 

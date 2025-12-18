@@ -37,8 +37,8 @@ export default function PublicCalendar() {
         .map((booking) => ({
           id: booking.id,
           title: `${booking.customerName}`,
-          start: booking.startTime,
-          end: booking.endTime,
+          start: new Date(booking.startTime).toISOString(),
+          end: new Date(booking.endTime).toISOString(),
           backgroundColor: getStatusColor(booking.status),
           borderColor: getStatusColor(booking.status),
           extendedProps: {
