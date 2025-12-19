@@ -261,12 +261,13 @@ export default function BookingModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-3 text-sm">
-                {error}
-              </div>
-            )}
+          <div className="max-h-[70vh] overflow-y-auto px-1">
+            <div className="grid gap-4 py-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-3 text-sm">
+                  {error}
+                </div>
+              )}
 
             <div className="grid gap-2">
               <Label htmlFor="customerName">
@@ -511,6 +512,7 @@ export default function BookingModal({
                 </p>
               </div>
             )}
+            </div>
           </div>
 
           <DialogFooter className="gap-3 pt-4">
