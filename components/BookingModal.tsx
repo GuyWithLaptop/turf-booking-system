@@ -254,41 +254,38 @@ export default function BookingModal({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="startTime">
-                  Start Time <span className="text-red-500">*</span>
+            {/* Time Slot Display */}
+            {(initialStartTime && initialEndTime) || booking ? (
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-lg p-4">
+                <Label className="text-sm font-semibold text-emerald-800 mb-2 block">
+                  Selected Time Slot
                 </Label>
-                <Input
-                  id="startTime"
-                  type="datetime-local"
-                  value={formData.startTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startTime: e.target.value })
-                  }
-                  required
-                  min="06:00"
-                  max="23:00"
-                />
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-sm text-gray-600">Date</div>
+                    <div className="text-lg font-bold text-gray-800">
+                      {format(new Date(formData.startTime), 'EEE, MMM dd, yyyy')}
+                    </div>
+                  </div>
+                  <div className="text-3xl text-emerald-600 font-bold">→</div>
+                  <div className="space-y-1 text-right">
+                    <div className="text-sm text-gray-600">Time</div>
+                    <div className="text-lg font-bold text-gray-800">
+                      {format(new Date(formData.startTime), 'h:mm a')} - {format(new Date(formData.endTime), 'h:mm a')}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-emerald-700 text-center">
+                  📅 2 hour slot selected
+                </div>
               </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="endTime">
-                  End Time <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="endTime"
-                  type="datetime-local"
-                  value={formData.endTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endTime: e.target.value })
-                  }
-                  required
-                  min="06:00"
-                  max="23:00"
-                />
+            ) : (
+              <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 text-center">
+                <p className="text-sm text-amber-800">
+                  ⚠️ Please select a time slot from the calendar to create a booking
+                </p>
               </div>
-            </div>
+            )}
 
             <div className="grid gap-2">
               <Label htmlFor="status">
