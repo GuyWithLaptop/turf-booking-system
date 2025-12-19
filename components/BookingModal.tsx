@@ -31,6 +31,7 @@ type BookingModalProps = {
   booking?: Booking | null;
   initialStartTime?: Date;
   initialEndTime?: Date;
+  selectedSlots?: Array<{ startTime: Date; endTime: Date }>;
 };
 
 export default function BookingModal({
@@ -40,6 +41,7 @@ export default function BookingModal({
   booking,
   initialStartTime,
   initialEndTime,
+  selectedSlots = [],
 }: BookingModalProps) {
   const [formData, setFormData] = useState({
     customerName: '',
@@ -125,6 +127,49 @@ export default function BookingModal({
         if (!recurringEndDate) {
           throw new Error('Please select an end date for recurring booking');
         }
+      }
+
+      // Handle multiple slot bookings
+      if (selectedSlots.length > 1 && !booking) {
+        let successCount = 0;
+        let failedCount = 0;
+
+        for (const slot of selectedSlots) {
+          try {
+            const payload = {
+              customerName: formData.customerName,
+              customerPhone: formData.customerPhone,
+              startTime: slot.startTime.toISOString(),
+              endTime: slot.endTime.toISOString(),
+              status: formData.status,
+              charge: parseFloat(formData.charge),
+              notes: formData.notes,
+            };
+
+            const response = await fetch('/api/bookings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+
+            if (response.ok) {
+              successCount++;
+            } else {
+              failedCount++;
+            }
+          } catch {
+            failedCount++;
+          }
+        }
+
+        if (successCount > 0) {
+          alert(`Successfully created ${successCount} booking(s)${failedCount > 0 ? `. ${failedCount} failed.` : '!'}`);
+          onSave();
+          onClose();
+        } else {
+          throw new Error('All bookings failed');
+        }
+        return;
       }
 
       const payload = {
@@ -256,29 +301,53 @@ export default function BookingModal({
 
             {/* Time Slot Display */}
             {formData.startTime && formData.endTime ? (
-              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-lg p-4">
-                <Label className="text-sm font-semibold text-emerald-800 mb-2 block">
-                  Selected Time Slot
-                </Label>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <div className="text-sm text-gray-600">Date</div>
-                    <div className="text-lg font-bold text-gray-800">
-                      {format(new Date(formData.startTime), 'EEE, MMM dd, yyyy')}
-                    </div>
+              selectedSlots.length > 1 ? (
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-lg p-4">
+                  <Label className="text-sm font-semibold text-purple-800 mb-3 block">
+                    Selected Time Slots ({selectedSlots.length})
+                  </Label>
+                  <div className="max-h-48 overflow-y-auto space-y-2 mb-3">
+                    {selectedSlots.map((slot, index) => (
+                      <div key={index} className="bg-white/70 rounded-lg p-2 flex items-center justify-between text-sm">
+                        <div className="font-medium text-gray-700">
+                          {format(slot.startTime, 'MMM dd, h:mm a')}
+                        </div>
+                        <div className="text-gray-500">→</div>
+                        <div className="font-medium text-gray-700">
+                          {format(slot.endTime, 'h:mm a')}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="text-3xl text-emerald-600 font-bold">→</div>
-                  <div className="space-y-1 text-right">
-                    <div className="text-sm text-gray-600">Time</div>
-                    <div className="text-lg font-bold text-gray-800">
-                      {format(new Date(formData.startTime), 'h:mm a')} - {format(new Date(formData.endTime), 'h:mm a')}
-                    </div>
+                  <div className="text-xs text-purple-700 text-center font-semibold">
+                    📅 {selectedSlots.length} slots × 2 hours = {selectedSlots.length * 2} hours total
                   </div>
                 </div>
-                <div className="mt-2 text-xs text-emerald-700 text-center">
-                  📅 2 hour slot selected
+              ) : (
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-lg p-4">
+                  <Label className="text-sm font-semibold text-emerald-800 mb-2 block">
+                    Selected Time Slot
+                  </Label>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <div className="text-sm text-gray-600">Date</div>
+                      <div className="text-lg font-bold text-gray-800">
+                        {format(new Date(formData.startTime), 'EEE, MMM dd, yyyy')}
+                      </div>
+                    </div>
+                    <div className="text-3xl text-emerald-600 font-bold">→</div>
+                    <div className="space-y-1 text-right">
+                      <div className="text-sm text-gray-600">Time</div>
+                      <div className="text-lg font-bold text-gray-800">
+                        {format(new Date(formData.startTime), 'h:mm a')} - {format(new Date(formData.endTime), 'h:mm a')}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-emerald-700 text-center">
+                    📅 2 hour slot selected
+                  </div>
                 </div>
-              </div>
+              )
             ) : (
               <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 text-center">
                 <p className="text-sm text-amber-800">

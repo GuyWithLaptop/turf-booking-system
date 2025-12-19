@@ -22,6 +22,7 @@ export default function TimeSlotBooking() {
   const [tomorrowSlots, setTomorrowSlots] = useState<TimeSlot[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [selectedSlots, setSelectedSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -91,14 +92,46 @@ export default function TimeSlotBooking() {
     return <Moon className="w-5 h-5 text-indigo-400" />;
   };
 
-  const handleSlotClick = (slot: TimeSlot) => {
-    setSelectedSlot(slot);
+  const toggleSlotSelection = (slot: TimeSlot) => {
+    if (!slot.isAvailable) {
+      // If slot is booked, open modal to view/edit
+      setSelectedSlot(slot);
+      setModalOpen(true);
+      return;
+    }
+
+    // Toggle selection for available slots
+    const isSelected = selectedSlots.some(
+      s => s.startTime.getTime() === slot.startTime.getTime()
+    );
+
+    if (isSelected) {
+      setSelectedSlots(selectedSlots.filter(
+        s => s.startTime.getTime() !== slot.startTime.getTime()
+      ));
+    } else {
+      setSelectedSlots([...selectedSlots, slot]);
+    }
+  };
+
+  const openBookingModal = () => {
+    if (selectedSlots.length === 0) {
+      alert('Please select at least one time slot');
+      return;
+    }
     setModalOpen(true);
+  };
+
+  const isSlotSelected = (slot: TimeSlot) => {
+    return selectedSlots.some(
+      s => s.startTime.getTime() === slot.startTime.getTime()
+    );
   };
 
   const handleModalClose = () => {
     setModalOpen(false);
     setSelectedSlot(null);
+    setSelectedSlots([]);
   };
 
   const handleModalSave = () => {
@@ -184,6 +217,37 @@ export default function TimeSlotBooking() {
           </div>
         </div>
 
+        {/* Selection Summary & Book Button */}
+        {selectedSlots.length > 0 && (
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-xl p-6 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold mb-1">
+                  {selectedSlots.length} Slot{selectedSlots.length > 1 ? 's' : ''} Selected
+                </h3>
+                <p className="text-white/80 text-sm">
+                  Click "Book Selected Slots" to continue
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setSelectedSlots([])}
+                  variant="outline"
+                  className="bg-white/20 hover:bg-white/30 border-white/30 text-white"
+                >
+                  Clear All
+                </Button>
+                <Button
+                  onClick={openBookingModal}
+                  className="bg-white text-purple-600 hover:bg-white/90 font-bold shadow-lg"
+                >
+                  Book Selected Slots
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Today's Slots */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -194,10 +258,12 @@ export default function TimeSlotBooking() {
             {todaySlots.map((slot, index) => (
               <div
                 key={`today-${index}`}
-                onClick={() => handleSlotClick(slot)}
+                onClick={() => toggleSlotSelection(slot)}
                 className={`
                   relative overflow-hidden rounded-xl border-2 p-6 cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-2xl
-                  ${slot.isAvailable
+                  ${isSlotSelected(slot)
+                    ? 'bg-gradient-to-br from-purple-100 to-indigo-100 border-purple-500 border-4 shadow-2xl ring-4 ring-purple-200'
+                    : slot.isAvailable
                     ? 'bg-white border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50'
                     : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-300'
                   }
@@ -221,12 +287,21 @@ export default function TimeSlotBooking() {
               {/* Status Indicator */}
               <div className="text-center">
                 {slot.isAvailable ? (
-                  <div className="inline-flex items-center px-4 py-2 bg-emerald-500 text-white rounded-full font-semibold text-sm">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                    </svg>
-                    Available
-                  </div>
+                  isSlotSelected(slot) ? (
+                    <div className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-full font-semibold text-sm shadow-lg">
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Selected
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center px-4 py-2 bg-emerald-500 text-white rounded-full font-semibold text-sm">
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                      </svg>
+                      Available
+                    </div>
+                  )
                 ) : slot.booking ? (
                   <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2 mb-1">
@@ -269,10 +344,12 @@ export default function TimeSlotBooking() {
             {tomorrowSlots.map((slot, index) => (
               <div
                 key={`tomorrow-${index}`}
-                onClick={() => handleSlotClick(slot)}
+                onClick={() => toggleSlotSelection(slot)}
                 className={`
                   relative overflow-hidden rounded-xl border-2 p-6 cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-2xl
-                  ${slot.isAvailable
+                  ${isSlotSelected(slot)
+                    ? 'bg-gradient-to-br from-purple-100 to-indigo-100 border-purple-500 border-4 shadow-2xl ring-4 ring-purple-200'
+                    : slot.isAvailable
                     ? 'bg-white border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50'
                     : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-300'
                   }
@@ -296,12 +373,21 @@ export default function TimeSlotBooking() {
                 {/* Status Indicator */}
                 <div className="text-center">
                   {slot.isAvailable ? (
-                    <div className="inline-flex items-center px-4 py-2 bg-indigo-500 text-white rounded-full font-semibold text-sm">
-                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                      </svg>
-                      Available
-                    </div>
+                    isSlotSelected(slot) ? (
+                      <div className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-full font-semibold text-sm shadow-lg">
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Selected
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center px-4 py-2 bg-indigo-500 text-white rounded-full font-semibold text-sm">
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                        </svg>
+                        Available
+                      </div>
+                    )
                   ) : slot.booking ? (
                     <div className="space-y-2">
                       <div className="flex items-center justify-center gap-2 mb-1">
@@ -340,8 +426,9 @@ export default function TimeSlotBooking() {
         onClose={handleModalClose}
         onSave={handleModalSave}
         booking={selectedSlot?.booking || null}
-        initialStartTime={selectedSlot?.startTime}
-        initialEndTime={selectedSlot?.endTime}
+        initialStartTime={selectedSlots.length > 0 ? selectedSlots[0].startTime : selectedSlot?.startTime}
+        initialEndTime={selectedSlots.length > 0 ? selectedSlots[selectedSlots.length - 1].endTime : selectedSlot?.endTime}
+        selectedSlots={selectedSlots}
       />
     </>
   );
