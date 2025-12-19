@@ -426,7 +426,6 @@ export default function BookingModal({
 
           <DialogFooter className="gap-3 pt-4">
             {booking && (
-            {booking && (
               <Button
                 type="button"
                 variant="destructive"

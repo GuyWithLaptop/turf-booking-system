@@ -82,7 +82,7 @@ export default function RecurringBookingsView() {
         const aFirstBooking = new Date(a.bookings[0]?.startTime || 0);
         const bFirstBooking = new Date(b.bookings[0]?.startTime || 0);
         return bFirstBooking.getTime() - aFirstBooking.getTime();
-      });
+      }) as RecurringGroup[];
 
       setRecurringGroups(groupsArray);
     } catch (error) {
