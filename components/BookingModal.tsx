@@ -255,7 +255,7 @@ export default function BookingModal({
             </div>
 
             {/* Time Slot Display */}
-            {(initialStartTime && initialEndTime) || booking ? (
+            {formData.startTime && formData.endTime ? (
               <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-300 rounded-lg p-4">
                 <Label className="text-sm font-semibold text-emerald-800 mb-2 block">
                   Selected Time Slot
