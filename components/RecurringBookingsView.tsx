@@ -40,8 +40,7 @@ export default function RecurringBookingsView() {
       const response = await fetch('/api/bookings');
       if (!response.ok) throw new Error('Failed to fetch bookings');
       
-      const data = await response.json();
-      const allBookings = data.bookings || [];
+      const allBookings = await response.json();
 
       // Group by parentBookingId
       const grouped = allBookings
