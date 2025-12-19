@@ -8,13 +8,14 @@ import BookingsList from '@/components/BookingsList';
 import Dashboard from '@/components/Dashboard';
 import Analytics from '@/components/Analytics';
 import ExpensesManagement from '@/components/ExpensesManagement';
+import RecurringBookingsView from '@/components/RecurringBookingsView';
 import { Button } from '@/components/ui/button';
-import { LogOut, Calendar, List, LayoutDashboard, BarChart3, Receipt } from 'lucide-react';
+import { LogOut, Calendar, List, LayoutDashboard, BarChart3, Receipt, Repeat } from 'lucide-react';
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [view, setView] = useState<'dashboard' | 'slots' | 'list' | 'analytics' | 'expenses'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'slots' | 'list' | 'analytics' | 'expenses' | 'recurring'>('dashboard');
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -99,6 +100,15 @@ export default function AdminPage() {
                   <Receipt className="w-4 h-4" />
                   Expenses
                 </Button>
+                <Button
+                  variant={view === 'recurring' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setView('recurring')}
+                  className="gap-2"
+                >
+                  <Repeat className="w-4 h-4" />
+                  Recurring
+                </Button>
               </div>
               <Button
                 variant="outline"
@@ -156,10 +166,19 @@ export default function AdminPage() {
             variant={view === 'expenses' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setView('expenses')}
-            className="gap-1 px-2 col-span-2"
+            className="gap-1 px-2"
           >
             <Receipt className="w-4 h-4" />
             <span className="text-xs">Expenses</span>
+          </Button>
+          <Button
+            variant={view === 'recurring' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setView('recurring')}
+            className="gap-1 px-2"
+          >
+            <Repeat className="w-4 h-4" />
+            <span className="text-xs">Recurring</span>
           </Button>
         </div>
 
@@ -181,6 +200,10 @@ export default function AdminPage() {
               </p>
             </div>
             <BookingsList />
+          </div>
+        ) : view === 'recurring' ? (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <RecurringBookingsView />
           </div>
         ) : view === 'analytics' ? (
           <Analytics />

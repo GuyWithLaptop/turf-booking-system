@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -20,6 +21,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Booking } from '@prisma/client';
+import { addDays, addWeeks, format } from 'date-fns';
+import { Repeat } from 'lucide-react';
 
 type BookingModalProps = {
   open: boolean;
@@ -47,6 +50,9 @@ export default function BookingModal({
     charge: '500',
     notes: '',
   });
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringDays, setRecurringDays] = useState<number[]>([]);
+  const [recurringEndDate, setRecurringEndDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -97,12 +103,30 @@ export default function BookingModal({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
+  const toggleRecurringDay = (day: number) => {
+    setRecurringDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day)
+        : [...prev, day].sort()
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+      // Validation for recurring bookings
+      if (isRecurring && !booking) {
+        if (recurringDays.length === 0) {
+          throw new Error('Please select at least one day for recurring booking');
+        }
+        if (!recurringEndDate) {
+          throw new Error('Please select an end date for recurring booking');
+        }
+      }
+
       const payload = {
         customerName: formData.customerName,
         customerPhone: formData.customerPhone,
@@ -113,10 +137,17 @@ export default function BookingModal({
         notes: formData.notes,
       };
 
-      const url = booking
-        ? `/api/bookings/${booking.id}`
-        : '/api/bookings';
-      const method = booking ? 'PATCH' : 'POST';
+      // Use recurring endpoint for new recurring bookings
+      let url = booking ? `/api/bookings/${booking.id}` : '/api/bookings';
+      let method = booking ? 'PATCH' : 'POST';
+
+      if (isRecurring && !booking) {
+        url = '/api/bookings/recurring';
+        Object.assign(payload, {
+          recurringDays,
+          recurringEndDate: new Date(recurringEndDate).toISOString(),
+        });
+      }
 
       const response = await fetch(url, {
         method,
@@ -129,6 +160,12 @@ export default function BookingModal({
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || 'Failed to save booking');
+      }
+
+      const result = await response.json();
+      
+      if (isRecurring && result.bookings) {
+        alert(`Successfully created ${result.bookings} recurring bookings!`);
       }
 
       onSave();
@@ -305,9 +342,90 @@ export default function BookingModal({
                 rows={3}
               />
             </div>
+
+            {/* Recurring Booking Options - Only for new bookings */}
+            {!booking && (
+              <div className="border-t pt-4 mt-2">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Checkbox
+                    id="recurring"
+                    checked={isRecurring}
+                    onCheckedChange={(checked) => {
+                      setIsRecurring(checked as boolean);
+                      if (!checked) {
+                        setRecurringDays([]);
+                        setRecurringEndDate('');
+                      }
+                    }}
+                  />
+                  <Label htmlFor="recurring" className="flex items-center gap-2 cursor-pointer">
+                    <Repeat className="w-4 h-4 text-emerald-600" />
+                    <span className="font-semibold">Recurring Booking (Multiple Days)</span>
+                  </Label>
+                </div>
+
+                {isRecurring && (
+                  <div className="space-y-4 pl-6 border-l-2 border-emerald-200">
+                    <div className="grid gap-2">
+                      <Label>Select Days to Repeat</Label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                          <Button
+                            key={day}
+                            type="button"
+                            variant={recurringDays.includes(index) ? 'default' : 'outline'}
+                            className={`text-xs ${
+                              recurringDays.includes(index)
+                                ? 'bg-emerald-600 hover:bg-emerald-700'
+                                : ''
+                            }`}
+                            onClick={() => toggleRecurringDay(index)}
+                          >
+                            {day}
+                          </Button>
+                        ))}
+                      </div>
+                      {recurringDays.length > 0 && (
+                        <p className="text-xs text-gray-600">
+                          Selected: {recurringDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="recurringEndDate">
+                        Repeat Until <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="recurringEndDate"
+                        type="date"
+                        value={recurringEndDate}
+                        onChange={(e) => setRecurringEndDate(e.target.value)}
+                        min={formData.startTime ? format(addDays(new Date(formData.startTime), 1), 'yyyy-MM-dd') : format(addDays(new Date(), 1), 'yyyy-MM-dd')}
+                        max={format(addWeeks(new Date(), 26), 'yyyy-MM-dd')}
+                        required={isRecurring}
+                      />
+                      <p className="text-xs text-gray-500">
+                        Maximum 6 months from start date
+                      </p>
+                    </div>
+
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-md p-3 text-sm text-emerald-800">
+                      <p className="font-semibold mb-1">📅 Recurring Booking Info:</p>
+                      <ul className="text-xs space-y-1 ml-4 list-disc">
+                        <li>This will create multiple bookings for selected days</li>
+                        <li>Same time slot will be reserved on each selected day</li>
+                        <li>All bookings will be auto-confirmed if slots are available</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter className="gap-3 pt-4">
+            {booking && (
             {booking && (
               <Button
                 type="button"

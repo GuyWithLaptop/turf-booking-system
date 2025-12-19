@@ -79,6 +79,12 @@ model Booking {
   charge         Float         @default(500)
   notes          String?       @db.Text
   
+  // Recurring booking fields
+  isRecurring    Boolean       @default(false)
+  recurringDays  String?       // JSON array of day numbers (0=Sunday, 6=Saturday)
+  recurringEndDate DateTime?
+  parentBookingId String?      // Links to first booking in series
+  
   createdById    String
   createdBy      User          @relation(fields: [createdById], references: [id])
   
@@ -87,6 +93,7 @@ model Booking {
 
   @@index([startTime, endTime])
   @@index([status])
+  @@index([parentBookingId])
   @@map("bookings")
 }
 
