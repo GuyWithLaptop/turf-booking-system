@@ -19,12 +19,25 @@ const recurringBookingSchema = z.object({
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    
     const body = await req.json();
     const validatedData = recurringBookingSchema.parse(body);
+
+    // If no session, get default owner user for public bookings
+    let userId = session?.user?.id;
+    if (!userId) {
+      const defaultUser = await prisma.user.findFirst({
+        where: { role: 'OWNER' },
+        select: { id: true },
+      });
+      if (!defaultUser) {
+        return NextResponse.json(
+          { error: 'System configuration error: No admin user found' },
+          { status: 500 }
+        );
+      }
+      userId = defaultUser.id;
+    }
 
     const startTime = new Date(validatedData.startTime);
     const endTime = new Date(validatedData.endTime);
@@ -123,7 +136,7 @@ export async function POST(req: Request) {
             recurringDays: JSON.stringify(validatedData.recurringDays),
             recurringEndDate: recurringEndDate,
             parentBookingId: parentId,
-            createdById: session.user.id,
+            createdById: userId,
             status: 'CONFIRMED',
           },
         });

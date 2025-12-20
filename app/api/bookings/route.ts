@@ -67,12 +67,24 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
 
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await request.json();
     const validatedData = bookingSchema.parse(body);
+
+    // If no session, get default owner user for public bookings
+    let userId = session?.user?.id;
+    if (!userId) {
+      const defaultUser = await prisma.user.findFirst({
+        where: { role: 'OWNER' },
+        select: { id: true },
+      });
+      if (!defaultUser) {
+        return NextResponse.json(
+          { error: 'System configuration error: No admin user found' },
+          { status: 500 }
+        );
+      }
+      userId = defaultUser.id;
+    }
 
     // Check for overlapping bookings
     const overlapping = await prisma.booking.findFirst({
@@ -112,7 +124,7 @@ export async function POST(request: NextRequest) {
         endTime: new Date(validatedData.endTime),
         status: validatedData.status,
         notes: validatedData.notes,
-        createdById: session.user.id,
+        createdById: userId,
       },
       include: {
         createdBy: {
