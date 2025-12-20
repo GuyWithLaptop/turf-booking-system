@@ -4,14 +4,18 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { ChevronLeft, ChevronRight, Sun, Moon, X } from 'lucide-react';
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfDay, addHours, isToday } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ChevronLeft, ChevronRight, Sun, Moon, X, Check } from 'lucide-react';
+import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfDay, addHours, isToday, isBefore } from 'date-fns';
 
 type TimeSlot = {
   startTime: Date;
   endTime: Date;
   isAvailable: boolean;
   booking?: any;
+  dayLabel?: string;
 };
 
 export default function MobileAvailabilityCalendar() {
@@ -20,15 +24,19 @@ export default function MobileAvailabilityCalendar() {
   const [showSlots, setShowSlots] = useState(false);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [selectedSlots, setSelectedSlots] = useState<TimeSlot[]>([]);
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringDays, setRecurringDays] = useState<number[]>([]);
+  const [recurringEndDate, setRecurringEndDate] = useState('');
 
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
-    price: '',
+    price: '500',
     advance: '0',
     discount: '0',
+    notes: '',
   });
 
   useEffect(() => {
@@ -53,9 +61,9 @@ export default function MobileAvailabilityCalendar() {
 
   const generateTimeSlots = () => {
     const slots: TimeSlot[] = [];
+    
+    // Generate slots for selected day
     const dayStart = startOfDay(selectedDate);
-
-    // Generate slots with odd hours (1-3, 3-5, etc.)
     for (let hour = 1; hour < 24; hour += 2) {
       const slotStart = new Date(dayStart);
       slotStart.setHours(hour, 0, 0, 0);
@@ -75,7 +83,37 @@ export default function MobileAvailabilityCalendar() {
         endTime: slotEnd,
         isAvailable: !booking,
         booking,
+        dayLabel: isToday(selectedDate) ? 'Today' : format(selectedDate, 'MMM dd'),
       });
+    }
+
+    // If today is selected, also show tomorrow's night slots (after 6 PM)
+    if (isToday(selectedDate)) {
+      const nextDay = addDays(selectedDate, 1);
+      const nextDayStart = startOfDay(nextDay);
+      
+      for (let hour = 19; hour < 24; hour += 2) {
+        const slotStart = new Date(nextDayStart);
+        slotStart.setHours(hour, 0, 0, 0);
+        const slotEnd = addHours(slotStart, 2);
+
+        const booking = bookings.find((b) => {
+          const bookingStart = new Date(b.startTime);
+          return (
+            isSameDay(bookingStart, nextDay) &&
+            bookingStart.getHours() === hour &&
+            b.status !== 'CANCELLED'
+          );
+        });
+
+        slots.push({
+          startTime: slotStart,
+          endTime: slotEnd,
+          isAvailable: !booking,
+          booking,
+          dayLabel: 'Tomorrow Night',
+        });
+      }
     }
 
     setTimeSlots(slots);
@@ -88,46 +126,126 @@ export default function MobileAvailabilityCalendar() {
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
+    setSelectedSlots([]);
     setShowSlots(true);
   };
 
-  const handleSlotSelect = (slot: TimeSlot) => {
-    if (slot.isAvailable) {
-      setSelectedSlot(slot);
-      setShowBookingForm(true);
+  const toggleSlotSelection = (slot: TimeSlot) => {
+    if (!slot.isAvailable) {
+      return; // Can't select booked slots
+    }
+
+    const isSelected = selectedSlots.some(
+      s => s.startTime.getTime() === slot.startTime.getTime()
+    );
+
+    if (isSelected) {
+      setSelectedSlots(selectedSlots.filter(
+        s => s.startTime.getTime() !== slot.startTime.getTime()
+      ));
+    } else {
+      setSelectedSlots([...selectedSlots, slot]);
     }
   };
 
+  const isSlotSelected = (slot: TimeSlot) => {
+    return selectedSlots.some(
+      s => s.startTime.getTime() === slot.startTime.getTime()
+    );
+  };
+
+  const handleBookNow = () => {
+    if (selectedSlots.length === 0) {
+      alert('Please select at least one time slot');
+      return;
+    }
+    setShowBookingForm(true);
+  };
+
   const handleBooking = async () => {
-    if (!selectedSlot || !formData.customerName || !formData.customerPhone || !formData.price) {
-      alert('Please fill all required fields');
+    if (selectedSlots.length === 0 || !formData.customerName || !formData.customerPhone || !formData.price) {
+      alert('Please fill all required fields and select at least one slot');
       return;
     }
 
     try {
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName: formData.customerName,
-          customerPhone: formData.customerPhone,
-          startTime: selectedSlot.startTime.toISOString(),
-          endTime: selectedSlot.endTime.toISOString(),
-          charge: parseInt(formData.price) - parseInt(formData.discount || '0'),
-          status: 'CONFIRMED',
-          notes: `Advance: ${formData.advance}`,
-        }),
-      });
+      // Handle recurring booking
+      if (isRecurring && selectedSlots.length === 1) {
+        if (recurringDays.length === 0 || !recurringEndDate) {
+          alert('Please select recurring days and end date');
+          return;
+        }
 
-      if (response.ok) {
-        alert('Booking confirmed successfully!');
-        setShowBookingForm(false);
-        setShowSlots(false);
-        setFormData({ customerName: '', customerPhone: '', price: '', advance: '0', discount: '0' });
+        const response = await fetch('/api/bookings/recurring', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName: formData.customerName,
+            customerPhone: formData.customerPhone,
+            startTime: selectedSlots[0].startTime.toISOString(),
+            endTime: selectedSlots[0].endTime.toISOString(),
+            recurringDays: recurringDays,
+            recurringEndDate: new Date(recurringEndDate).toISOString(),
+            charge: parseInt(formData.price) - parseInt(formData.discount || '0'),
+            notes: formData.notes || `Advance: ${formData.advance}`,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          alert(`Successfully created ${result.bookings} recurring bookings!`);
+          resetForm();
+          fetchBookings();
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Failed to create recurring bookings');
+        }
+      } else {
+        // Handle multi-slot or single booking
+        for (const slot of selectedSlots) {
+          const response = await fetch('/api/bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customerName: formData.customerName,
+              customerPhone: formData.customerPhone,
+              startTime: slot.startTime.toISOString(),
+              endTime: slot.endTime.toISOString(),
+              charge: parseInt(formData.price) - parseInt(formData.discount || '0'),
+              status: 'CONFIRMED',
+              notes: formData.notes || `Advance: ${formData.advance}`,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to create booking');
+          }
+        }
+
+        alert(`Successfully created ${selectedSlots.length} booking(s)!`);
+        resetForm();
         fetchBookings();
       }
     } catch (error) {
       alert('Failed to create booking');
+    }
+  };
+
+  const resetForm = () => {
+    setShowBookingForm(false);
+    setShowSlots(false);
+    setSelectedSlots([]);
+    setIsRecurring(false);
+    setRecurringDays([]);
+    setRecurringEndDate('');
+    setFormData({ customerName: '', customerPhone: '', price: '500', advance: '0', discount: '0', notes: '' });
+  };
+
+  const toggleRecurringDay = (day: number) => {
+    if (recurringDays.includes(day)) {
+      setRecurringDays(recurringDays.filter(d => d !== day));
+    } else {
+      setRecurringDays([...recurringDays, day]);
     }
   };
 
@@ -210,34 +328,60 @@ export default function MobileAvailabilityCalendar() {
               {format(selectedDate, 'MMMM dd, yyyy')}
             </div>
 
+            {/* Selected slots count */}
+            {selectedSlots.length > 0 && (
+              <div className="mb-4 bg-purple-50 border-2 border-purple-300 rounded-lg p-3 text-center">
+                <span className="font-semibold text-purple-700">
+                  {selectedSlots.length} Slot{selectedSlots.length > 1 ? 's' : ''} Selected
+                </span>
+                <button
+                  onClick={() => setSelectedSlots([])}
+                  className="ml-3 text-sm text-purple-600 underline"
+                >
+                  Clear All
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3 mb-6">
               {timeSlots.map((slot, idx) => {
                 const hour = slot.startTime.getHours();
                 const isDaytime = hour >= 6 && hour < 18;
+                const selected = isSlotSelected(slot);
                 
                 return (
                   <button
                     key={idx}
-                    onClick={() => handleSlotSelect(slot)}
+                    onClick={() => toggleSlotSelection(slot)}
                     disabled={!slot.isAvailable}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      slot.isAvailable
+                    className={`p-4 rounded-lg border-2 transition-all relative ${
+                      selected
+                        ? 'border-purple-500 bg-purple-50 shadow-lg'
+                        : slot.isAvailable
                         ? 'border-gray-200 bg-white hover:border-emerald-500 hover:bg-emerald-50'
                         : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
                     }`}
                   >
+                    {selected && (
+                      <div className="absolute top-1 right-1 bg-purple-600 rounded-full p-1">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 mb-2">
                       {isDaytime ? (
                         <Sun className="w-5 h-5 text-amber-500" />
                       ) : (
                         <Moon className="w-5 h-5 text-indigo-500" />
                       )}
-                      <span className={`text-sm font-medium ${
-                        slot.isAvailable ? 'text-emerald-600' : 'text-gray-400'
+                      <span className={`text-xs font-medium ${
+                        selected ? 'text-purple-700' : slot.isAvailable ? 'text-emerald-600' : 'text-gray-400'
                       }`}>
                         {format(slot.startTime, 'hh:mm a')} - {format(slot.endTime, 'hh:mm a')}
                       </span>
                     </div>
+                    {slot.dayLabel && (
+                      <div className="text-xs text-gray-500 mt-1">{slot.dayLabel}</div>
+                    )}
                   </button>
                 );
               })}
@@ -247,15 +391,16 @@ export default function MobileAvailabilityCalendar() {
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => setShowSlots(false)}
+                onClick={() => { setShowSlots(false); setSelectedSlots([]); }}
               >
                 Cancel
               </Button>
               <Button
                 className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
-                disabled
+                onClick={handleBookNow}
+                disabled={selectedSlots.length === 0}
               >
-                Book
+                Book {selectedSlots.length > 0 && `(${selectedSlots.length})`}
               </Button>
             </div>
           </div>
@@ -346,40 +491,142 @@ export default function MobileAvailabilityCalendar() {
                   />
                 </div>
               </div>
+
+              {/* Recurring Booking Option - Only for single slot */}
+              {selectedSlots.length === 1 && (
+                <div className="border-t pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Checkbox
+                      id="recurring"
+                      checked={isRecurring}
+                      onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
+                    />
+                    <Label htmlFor="recurring" className="text-sm font-medium cursor-pointer">
+                      Make this a recurring booking
+                    </Label>
+                  </div>
+
+                  {isRecurring && (
+                    <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">Select Days</Label>
+                        <div className="grid grid-cols-7 gap-2">
+                          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => toggleRecurringDay(idx)}
+                              className={`aspect-square rounded-lg text-sm font-medium transition-all ${
+                                recurringDays.includes(idx)
+                                  ? 'bg-emerald-500 text-white shadow-lg'
+                                  : 'bg-white border border-gray-300 text-gray-700 hover:border-emerald-500'
+                              }`}
+                            >
+                              {day}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="recurringEndDate" className="text-sm font-medium mb-2 block">
+                          Repeat Until
+                        </Label>
+                        <Input
+                          id="recurringEndDate"
+                          type="date"
+                          value={recurringEndDate}
+                          onChange={(e) => setRecurringEndDate(e.target.value)}
+                          min={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
+                          className="w-full"
+                        />
+                      </div>
+
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                        <p className="font-semibold mb-1">ℹ️ Recurring Booking Info:</p>
+                        <p className="text-xs">
+                          This will create bookings for all selected days from now until the end date.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Info message for multi-slot bookings */}
+              {selectedSlots.length > 1 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                  <p className="font-semibold mb-1">ℹ️ Multiple Slots Selected:</p>
+                  <p className="text-xs">
+                    A separate booking will be created for each selected time slot ({selectedSlots.length} slots).
+                    Recurring booking is not available for multiple slots.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Booking Summary */}
-            {selectedSlot && (
+            {selectedSlots.length > 0 && (
               <Card className="p-4 bg-gray-50 mb-6">
                 <h4 className="text-emerald-600 font-semibold mb-4 text-center">
                   Booking Summary
                 </h4>
                 
-                <div className="flex justify-between items-start mb-4">
+                {selectedSlots.length === 1 ? (
                   <div>
-                    <div className="font-semibold text-gray-900">
-                      {format(selectedSlot.startTime, 'dd MMM yyyy')} | {formData.customerName || 'Name'}
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="font-semibold text-gray-900">
+                          {format(selectedSlots[0].startTime, 'dd MMM yyyy')} | {formData.customerName || 'Name'}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {format(selectedSlots[0].startTime, 'hh:mm a')} - {format(selectedSlots[0].endTime, 'hh:mm a')}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      {format(selectedSlot.startTime, 'hh:mm a')} - {format(selectedSlot.endTime, 'hh:mm a')}
-                    </div>
-                  </div>
-                </div>
 
-                <div className="border-t pt-3 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Booking hours</span>
-                    <span className="font-medium">2 hr</span>
+                    <div className="border-t pt-3 space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Booking hours</span>
+                        <span className="font-medium">2 hr</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Booking sub-total</span>
+                        <span className="font-medium">Rs. {formData.price || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Advance payment</span>
+                        <span className="font-medium">Rs. {formData.advance || 0}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Booking sub-total</span>
-                    <span className="font-medium">Rs. {formData.price || 0}</span>
+                ) : (
+                  <div>
+                    <div className="mb-4">
+                      <div className="font-semibold text-gray-900 mb-2">
+                        {formData.customerName || 'Name'} | {selectedSlots.length} Slots
+                      </div>
+                      <div className="max-h-40 overflow-y-auto space-y-1">
+                        {selectedSlots.map((slot, idx) => (
+                          <div key={idx} className="text-sm text-gray-600 bg-white p-2 rounded">
+                            {format(slot.startTime, 'MMM dd, hh:mm a')} - {format(slot.endTime, 'hh:mm a')}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-3 space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total hours</span>
+                        <span className="font-medium">{selectedSlots.length * 2} hr</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total charge</span>
+                        <span className="font-medium">Rs. {(parseInt(formData.price || '0') - parseInt(formData.discount || '0')) * selectedSlots.length}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Advance payment</span>
-                    <span className="font-medium">Rs. {formData.advance || 0}</span>
-                  </div>
-                </div>
+                )}
               </Card>
             )}
 
