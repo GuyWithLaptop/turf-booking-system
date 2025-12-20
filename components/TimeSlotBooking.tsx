@@ -49,8 +49,8 @@ export default function TimeSlotBooking() {
     const slots: TimeSlot[] = [];
     const dayStart = startOfDay(date);
     
-    // Generate slots 24 hours (12 slots of 2 hours each)
-    for (let hour = 0; hour < 24; hour += 2) {
+    // Generate slots with odd hours (1-3, 3-5, 5-7, etc.)
+    for (let hour = 1; hour < 24; hour += 2) {
       const slotStart = new Date(dayStart);
       slotStart.setHours(hour, 0, 0, 0);
       const slotEnd = addHours(slotStart, 2);
