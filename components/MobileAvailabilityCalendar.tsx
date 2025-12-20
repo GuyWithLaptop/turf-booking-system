@@ -315,17 +315,13 @@ export default function MobileAvailabilityCalendar() {
 
       {/* Time Slots Modal */}
       <Dialog open={showSlots} onOpenChange={setShowSlots}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <div className="p-4">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Available slots</h3>
               <Button variant="ghost" size="sm" onClick={() => setShowSlots(false)}>
                 <X className="w-5 h-5" />
               </Button>
-            </div>
-
-            <div className="bg-emerald-500 text-white text-center py-3 rounded-lg mb-6 font-semibold">
-              {format(selectedDate, 'MMMM dd, yyyy')}
             </div>
 
             {/* Selected slots count */}
@@ -343,51 +339,145 @@ export default function MobileAvailabilityCalendar() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              {timeSlots.map((slot, idx) => {
-                const hour = slot.startTime.getHours();
-                const isDaytime = hour >= 6 && hour < 18;
-                const selected = isSlotSelected(slot);
+            {/* Today's Slots */}
+            {timeSlots.filter(slot => slot.dayLabel !== 'Tomorrow Night').length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sun className="w-5 h-5 text-amber-500" />
+                  <h4 className="text-base font-semibold text-gray-800">
+                    {isToday(selectedDate) ? 'Today' : format(selectedDate, 'MMMM dd, yyyy')} - Dec {format(selectedDate, 'dd')}
+                  </h4>
+                </div>
                 
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => toggleSlotSelection(slot)}
-                    disabled={!slot.isAvailable}
-                    className={`p-4 rounded-lg border-2 transition-all relative ${
-                      selected
-                        ? 'border-purple-500 bg-purple-50 shadow-lg'
-                        : slot.isAvailable
-                        ? 'border-gray-200 bg-white hover:border-emerald-500 hover:bg-emerald-50'
-                        : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
-                    }`}
-                  >
-                    {selected && (
-                      <div className="absolute top-1 right-1 bg-purple-600 rounded-full p-1">
-                        <Check className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 mb-2">
-                      {isDaytime ? (
-                        <Sun className="w-5 h-5 text-amber-500" />
-                      ) : (
-                        <Moon className="w-5 h-5 text-indigo-500" />
-                      )}
-                      <span className={`text-xs font-medium ${
-                        selected ? 'text-purple-700' : slot.isAvailable ? 'text-emerald-600' : 'text-gray-400'
-                      }`}>
-                        {format(slot.startTime, 'hh:mm a')} - {format(slot.endTime, 'hh:mm a')}
-                      </span>
-                    </div>
-                    {slot.dayLabel && (
-                      <div className="text-xs text-gray-500 mt-1">{slot.dayLabel}</div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {timeSlots
+                    .filter(slot => slot.dayLabel !== 'Tomorrow Night')
+                    .map((slot, idx) => {
+                      const hour = slot.startTime.getHours();
+                      const isDaytime = hour >= 6 && hour < 18;
+                      const selected = isSlotSelected(slot);
+                      
+                      return (
+                        <div
+                          key={idx}
+                          className={`p-4 rounded-xl border transition-all ${
+                            selected
+                              ? 'border-purple-500 bg-purple-50 shadow-md'
+                              : slot.isAvailable
+                              ? 'border-gray-200 bg-white'
+                              : 'border-gray-100 bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-3">
+                            {isDaytime ? (
+                              <Sun className="w-4 h-4 text-amber-500" />
+                            ) : (
+                              <Moon className="w-4 h-4 text-blue-400" />
+                            )}
+                            <span className="text-xs font-medium text-gray-500 uppercase">
+                              {isToday(selectedDate) ? 'TODAY' : 'TOMORROW'}
+                            </span>
+                          </div>
+                          
+                          <div className="text-center mb-3">
+                            <div className="text-2xl font-bold text-gray-800 mb-1">
+                              {format(slot.startTime, 'h:mm a')}
+                            </div>
+                            <div className="text-xl font-bold text-gray-800">
+                              {format(slot.endTime, 'h:mm a')}
+                            </div>
+                          </div>
 
-            <div className="flex gap-3">
+                          {slot.isAvailable ? (
+                            <button
+                              onClick={() => toggleSlotSelection(slot)}
+                              className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${
+                                selected
+                                  ? 'bg-purple-600 text-white shadow-md'
+                                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                              }`}
+                            >
+                              {selected ? '✓ Selected' : 'Available'}
+                            </button>
+                          ) : (
+                            <div className="w-full py-2 rounded-lg text-sm font-semibold bg-gray-200 text-gray-500 text-center">
+                              Booked
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* Tomorrow Night's Slots */}
+            {timeSlots.filter(slot => slot.dayLabel === 'Tomorrow Night').length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Moon className="w-5 h-5 text-blue-500" />
+                  <h4 className="text-base font-semibold text-gray-800">
+                    Tomorrow - Dec {format(addDays(selectedDate, 1), 'dd')}
+                  </h4>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  {timeSlots
+                    .filter(slot => slot.dayLabel === 'Tomorrow Night')
+                    .map((slot, idx) => {
+                      const selected = isSlotSelected(slot);
+                      
+                      return (
+                        <div
+                          key={`tomorrow-${idx}`}
+                          className={`p-4 rounded-xl border transition-all ${
+                            selected
+                              ? 'border-purple-500 bg-purple-50 shadow-md'
+                              : slot.isAvailable
+                              ? 'border-gray-200 bg-white'
+                              : 'border-gray-100 bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-3">
+                            <Moon className="w-4 h-4 text-blue-400" />
+                            <span className="text-xs font-medium text-gray-500 uppercase">
+                              TOMORROW
+                            </span>
+                          </div>
+                          
+                          <div className="text-center mb-3">
+                            <div className="text-2xl font-bold text-gray-800 mb-1">
+                              {format(slot.startTime, 'h:mm a')}
+                            </div>
+                            <div className="text-xl font-bold text-gray-800">
+                              {format(slot.endTime, 'h:mm a')}
+                            </div>
+                          </div>
+
+                          {slot.isAvailable ? (
+                            <button
+                              onClick={() => toggleSlotSelection(slot)}
+                              className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${
+                                selected
+                                  ? 'bg-purple-600 text-white shadow-md'
+                                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                              }`}
+                            >
+                              {selected ? '✓ Selected' : 'Available'}
+                            </button>
+                          ) : (
+                            <div className="w-full py-2 rounded-lg text-sm font-semibold bg-gray-200 text-gray-500 text-center">
+                              Booked
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3 sticky bottom-0 bg-white pt-4 border-t">
               <Button
                 variant="outline"
                 className="flex-1"
