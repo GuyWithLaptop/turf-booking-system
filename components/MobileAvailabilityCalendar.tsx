@@ -87,33 +87,31 @@ export default function MobileAvailabilityCalendar() {
       });
     }
 
-    // If today is selected, also show tomorrow's night slots (after 6 PM)
-    if (isToday(selectedDate)) {
-      const nextDay = addDays(selectedDate, 1);
-      const nextDayStart = startOfDay(nextDay);
-      
-      for (let hour = 19; hour < 24; hour += 2) {
-        const slotStart = new Date(nextDayStart);
-        slotStart.setHours(hour, 0, 0, 0);
-        const slotEnd = addHours(slotStart, 2);
+    // Always show next day's slots (full day)
+    const nextDay = addDays(selectedDate, 1);
+    const nextDayStart = startOfDay(nextDay);
+    
+    for (let hour = 1; hour < 24; hour += 2) {
+      const slotStart = new Date(nextDayStart);
+      slotStart.setHours(hour, 0, 0, 0);
+      const slotEnd = addHours(slotStart, 2);
 
-        const booking = bookings.find((b) => {
-          const bookingStart = new Date(b.startTime);
-          return (
-            isSameDay(bookingStart, nextDay) &&
-            bookingStart.getHours() === hour &&
-            b.status !== 'CANCELLED'
-          );
-        });
+      const booking = bookings.find((b) => {
+        const bookingStart = new Date(b.startTime);
+        return (
+          isSameDay(bookingStart, nextDay) &&
+          bookingStart.getHours() === hour &&
+          b.status !== 'CANCELLED'
+        );
+      });
 
-        slots.push({
-          startTime: slotStart,
-          endTime: slotEnd,
-          isAvailable: !booking,
-          booking,
-          dayLabel: 'Tomorrow Night',
-        });
-      }
+      slots.push({
+        startTime: slotStart,
+        endTime: slotEnd,
+        isAvailable: !booking,
+        booking,
+        dayLabel: isToday(selectedDate) ? 'Tomorrow' : format(nextDay, 'MMM dd'),
+      });
     }
 
     setTimeSlots(slots);
@@ -340,18 +338,26 @@ export default function MobileAvailabilityCalendar() {
             )}
 
             {/* Today's Slots */}
-            {timeSlots.filter(slot => slot.dayLabel !== 'Tomorrow Night').length > 0 && (
+            {timeSlots.filter(slot => {
+              const slotDate = startOfDay(slot.startTime);
+              const selected = startOfDay(selectedDate);
+              return slotDate.getTime() === selected.getTime();
+            }).length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Sun className="w-5 h-5 text-amber-500" />
                   <h4 className="text-base font-semibold text-gray-800">
-                    {isToday(selectedDate) ? 'Today' : format(selectedDate, 'MMMM dd, yyyy')} - Dec {format(selectedDate, 'dd')}
+                    {isToday(selectedDate) ? 'Today' : format(selectedDate, 'MMMM dd')} - Dec {format(selectedDate, 'dd')}
                   </h4>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3">
                   {timeSlots
-                    .filter(slot => slot.dayLabel !== 'Tomorrow Night')
+                    .filter(slot => {
+                      const slotDate = startOfDay(slot.startTime);
+                      const selected = startOfDay(selectedDate);
+                      return slotDate.getTime() === selected.getTime();
+                    })
                     .map((slot, idx) => {
                       const hour = slot.startTime.getHours();
                       const isDaytime = hour >= 6 && hour < 18;
@@ -375,7 +381,7 @@ export default function MobileAvailabilityCalendar() {
                               <Moon className="w-4 h-4 text-blue-400" />
                             )}
                             <span className="text-xs font-medium text-gray-500 uppercase">
-                              {isToday(selectedDate) ? 'TODAY' : 'TOMORROW'}
+                              {isToday(selectedDate) ? 'TODAY' : format(selectedDate, 'MMM DD').toUpperCase()}
                             </span>
                           </div>
                           
@@ -411,20 +417,30 @@ export default function MobileAvailabilityCalendar() {
               </div>
             )}
 
-            {/* Tomorrow Night's Slots */}
-            {timeSlots.filter(slot => slot.dayLabel === 'Tomorrow Night').length > 0 && (
+            {/* Tomorrow/Next Day's Slots */}
+            {timeSlots.filter(slot => {
+              const slotDate = startOfDay(slot.startTime);
+              const nextDay = startOfDay(addDays(selectedDate, 1));
+              return slotDate.getTime() === nextDay.getTime();
+            }).length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Moon className="w-5 h-5 text-blue-500" />
                   <h4 className="text-base font-semibold text-gray-800">
-                    Tomorrow - Dec {format(addDays(selectedDate, 1), 'dd')}
+                    {isToday(selectedDate) ? 'Tomorrow' : format(addDays(selectedDate, 1), 'MMMM dd')} - Dec {format(addDays(selectedDate, 1), 'dd')}
                   </h4>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3">
                   {timeSlots
-                    .filter(slot => slot.dayLabel === 'Tomorrow Night')
+                    .filter(slot => {
+                      const slotDate = startOfDay(slot.startTime);
+                      const nextDay = startOfDay(addDays(selectedDate, 1));
+                      return slotDate.getTime() === nextDay.getTime();
+                    })
                     .map((slot, idx) => {
+                      const hour = slot.startTime.getHours();
+                      const isDaytime = hour >= 6 && hour < 18;
                       const selected = isSlotSelected(slot);
                       
                       return (
@@ -439,9 +455,13 @@ export default function MobileAvailabilityCalendar() {
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-3">
-                            <Moon className="w-4 h-4 text-blue-400" />
+                            {isDaytime ? (
+                              <Sun className="w-4 h-4 text-amber-500" />
+                            ) : (
+                              <Moon className="w-4 h-4 text-blue-400" />
+                            )}
                             <span className="text-xs font-medium text-gray-500 uppercase">
-                              TOMORROW
+                              {isToday(selectedDate) ? 'TOMORROW' : format(addDays(selectedDate, 1), 'MMM DD').toUpperCase()}
                             </span>
                           </div>
                           
