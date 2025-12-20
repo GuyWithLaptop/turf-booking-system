@@ -1,0 +1,41 @@
+{
+  "name": "Turf Booking System",
+  "short_name": "Turf Booking",
+  "description": "Manage your turf bookings, revenue, and availability",
+  "start_url": "/admin",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "New Booking",
+      "short_name": "Book",
+      "description": "Create a new booking",
+      "url": "/admin?view=slots",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Today's Revenue",
+      "short_name": "Revenue",
+      "description": "View today's revenue",
+      "url": "/admin?view=revenue",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
