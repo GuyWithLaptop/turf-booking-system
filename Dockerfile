@@ -1,3 +1,4 @@
+# Cache bust: 2025-12-20
 FROM node:18-alpine AS base
 
 # Install dependencies for Prisma
