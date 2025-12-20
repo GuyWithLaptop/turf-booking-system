@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { ChevronRight, FileText, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import MobileBookingDetails from './MobileBookingDetails';
 
 type Booking = {
   id: string;
@@ -14,11 +15,14 @@ type Booking = {
   endTime: string;
   status: string;
   charge: number;
+  notes?: string;
 };
 
 export default function MobileBookingsList() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     fetchBookings();
@@ -34,6 +38,20 @@ export default function MobileBookingsList() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBookingClick = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setShowDetails(true);
+  };
+
+  const handleCloseDetails = () => {
+    setShowDetails(false);
+    setSelectedBooking(null);
+  };
+
+  const handleUpdateBooking = () => {
+    fetchBookings();
   };
 
   // Get last 7 days bookings
@@ -83,6 +101,7 @@ export default function MobileBookingsList() {
             {last7DaysBookings.map((booking) => (
               <Card
                 key={booking.id}
+                onClick={() => handleBookingClick(booking)}
                 className="p-4 bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="flex items-center justify-between">
@@ -107,6 +126,14 @@ export default function MobileBookingsList() {
           </div>
         )}
       </div>
+
+      {/* Booking Details Modal */}
+      <MobileBookingDetails
+        booking={selectedBooking}
+        open={showDetails}
+        onClose={handleCloseDetails}
+        onUpdate={handleUpdateBooking}
+      />
     </div>
   );
 }

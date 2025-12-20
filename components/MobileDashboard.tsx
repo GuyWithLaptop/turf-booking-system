@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Calendar, TrendingUp, Clock, IndianRupee } from 'lucide-react';
 import { format, startOfDay, endOfDay, isToday, isFuture } from 'date-fns';
+import MobileBookingDetails from './MobileBookingDetails';
 
 type Booking = {
   id: string;
@@ -13,11 +14,14 @@ type Booking = {
   endTime: string;
   status: string;
   charge: number;
+  notes?: string;
 };
 
 export default function MobileDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     fetchBookings();
@@ -33,6 +37,20 @@ export default function MobileDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBookingClick = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setShowDetails(true);
+  };
+
+  const handleCloseDetails = () => {
+    setShowDetails(false);
+    setSelectedBooking(null);
+  };
+
+  const handleUpdateBooking = () => {
+    fetchBookings();
   };
 
   const todayBookings = bookings.filter((b) =>
@@ -101,7 +119,11 @@ export default function MobileDashboard() {
         ) : (
           <div className="space-y-3">
             {todayBookings.map((booking) => (
-              <Card key={booking.id} className="p-4 bg-white shadow-sm">
+              <Card 
+                key={booking.id} 
+                onClick={() => handleBookingClick(booking)}
+                className="p-4 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-semibold text-gray-900">{booking.customerName}</div>
@@ -139,7 +161,11 @@ export default function MobileDashboard() {
         ) : (
           <div className="space-y-3">
             {upcomingBookings.map((booking) => (
-              <Card key={booking.id} className="p-4 bg-white shadow-sm">
+              <Card 
+                key={booking.id} 
+                onClick={() => handleBookingClick(booking)}
+                className="p-4 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-semibold text-gray-900">{booking.customerName}</div>
@@ -179,6 +205,14 @@ export default function MobileDashboard() {
           </div>
         </Card>
       </div>
+
+      {/* Booking Details Modal */}
+      <MobileBookingDetails
+        booking={selectedBooking}
+        open={showDetails}
+        onClose={handleCloseDetails}
+        onUpdate={handleUpdateBooking}
+      />
     </div>
   );
 }
