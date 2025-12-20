@@ -56,8 +56,8 @@ function AdminContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      {/* Header - Desktop Only */}
+      <header className="hidden lg:block bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -69,7 +69,7 @@ function AdminContent() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden lg:flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
                 <Button
                   variant={view === 'dashboard' ? 'default' : 'ghost'}
                   size="sm"
@@ -139,64 +139,6 @@ function AdminContent() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {/* Mobile view toggle */}
-        <div className="lg:hidden mb-4 grid grid-cols-3 gap-2">
-          <Button
-            variant={view === 'dashboard' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('dashboard')}
-            className="gap-1 px-2"
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            <span className="text-xs">Dashboard</span>
-          </Button>
-          <Button
-            variant={view === 'slots' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('slots')}
-            className="gap-1 px-2"
-          >
-            <Calendar className="w-4 h-4" />
-            <span className="text-xs">Slots</span>
-          </Button>
-          <Button
-            variant={view === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('list')}
-            className="gap-1 px-2"
-          >
-            <List className="w-4 h-4" />
-            <span className="text-xs">List</span>
-          </Button>
-          <Button
-            variant={view === 'analytics' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('analytics')}
-            className="gap-1 px-2"
-          >
-            <BarChart3 className="w-4 h-4" />
-            <span className="text-xs">Analytics</span>
-          </Button>
-          <Button
-            variant={view === 'expenses' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('expenses')}
-            className="gap-1 px-2"
-          >
-            <Receipt className="w-4 h-4" />
-            <span className="text-xs">Expenses</span>
-          </Button>
-          <Button
-            variant={view === 'recurring' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setView('recurring')}
-            className="gap-1 px-2"
-          >
-            <Repeat className="w-4 h-4" />
-            <span className="text-xs">Recurring</span>
-          </Button>
-        </div>
-
         {/* Desktop Content */}
         <div className="hidden lg:block">
           {view === 'dashboard' ? (
