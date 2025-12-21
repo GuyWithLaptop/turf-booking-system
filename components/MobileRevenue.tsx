@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { FileText, Plus, X } from 'lucide-react';
 import { format, startOfDay, isSameDay } from 'date-fns';
 
 type Booking = {
@@ -17,6 +20,14 @@ type Booking = {
   notes?: string;
 };
 
+type Expense = {
+  id: string;
+  description: string;
+  amount: number;
+  category: string;
+  date: string;
+};
+
 type DailyRevenue = {
   date: string;
   advance: number;
@@ -26,10 +37,19 @@ type DailyRevenue = {
 
 export default function MobileRevenue() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({
+    description: '',
+    amount: '',
+    category: 'OPERATIONAL',
+    date: format(new Date(), 'yyyy-MM-dd'),
+  });
 
   useEffect(() => {
     fetchBookings();
+    fetchExpenses();
   }, []);
 
   const fetchBookings = async () => {
@@ -41,6 +61,53 @@ export default function MobileRevenue() {
       console.error('Error fetching bookings:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchExpenses = async () => {
+    try {
+      const response = await fetch('/api/expenses');
+      const data = await response.json();
+      setExpenses(data);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+    }
+  };
+
+  const handleAddExpense = async () => {
+    if (!expenseForm.description || !expenseForm.amount) {
+      alert('Please fill all required fields');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: expenseForm.description,
+          amount: parseFloat(expenseForm.amount),
+          category: expenseForm.category,
+          date: new Date(expenseForm.date).toISOString(),
+        }),
+      });
+
+      if (response.ok) {
+        alert('Expense added successfully!');
+        setShowExpenseForm(false);
+        setExpenseForm({
+          description: '',
+          amount: '',
+          category: 'OPERATIONAL',
+          date: format(new Date(), 'yyyy-MM-dd'),
+        });
+        fetchExpenses();
+      } else {
+        alert('Failed to add expense');
+      }
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      alert('Failed to add expense');
     }
   };
 
@@ -85,9 +152,17 @@ export default function MobileRevenue() {
   const totalAdvance = last7DaysRevenue.reduce((sum, day) => sum + day.advance, 0);
   const totalPaid = last7DaysRevenue.reduce((sum, day) => sum + day.paid, 0);
 
-  // Assume cash vs online split (you can enhance this with actual payment method tracking)
-  const cashTotal = Math.floor(grandTotal * 0.6); // Example: 60% cash
-  const onlineTotal = grandTotal - cashTotal;
+  // Calculate total expenses for last 7 days
+  const sevenDaysAgoDate = new Date();
+  sevenDaysAgoDate.setDate(sevenDaysAgoDate.getDate() - 7);
+  
+  const recentExpenses = expenses.filter((e) => {
+    const expenseDate = new Date(e.date);
+    return expenseDate >= sevenDaysAgoDate;
+  });
+  
+  const totalExpenses = recentExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const netProfit = grandTotal - totalExpenses;
 
   if (loading) {
     return (
@@ -102,14 +177,17 @@ export default function MobileRevenue() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Revenue</h1>
         <div className="flex gap-2">
+          <Button 
+            onClick={() => setShowExpenseForm(true)}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white"
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Expense
+          </Button>
           <Button variant="outline" size="sm" className="bg-white">
             <FileText className="w-4 h-4 mr-2 text-emerald-600" />
             <span className="text-emerald-600">PDF</span>
-          </Button>
-          <Button variant="outline" size="sm" className="p-2 bg-white">
-            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
           </Button>
         </div>
       </div>
@@ -159,17 +237,107 @@ export default function MobileRevenue() {
       </div>
 
       {/* Payment Method Summary */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         <Card className="p-4 bg-white">
-          <div className="text-sm text-gray-600 mb-2">Cash</div>
-          <div className="text-2xl font-bold text-gray-900">{cashTotal} ₹</div>
+          <div className="text-xs text-gray-600 mb-1">Revenue</div>
+          <div className="text-xl font-bold text-emerald-600">{grandTotal} ₹</div>
         </Card>
 
         <Card className="p-4 bg-white">
-          <div className="text-sm text-gray-600 mb-2">Online</div>
-          <div className="text-2xl font-bold text-gray-900">{onlineTotal} ₹</div>
+          <div className="text-xs text-gray-600 mb-1">Expense</div>
+          <div className="text-xl font-bold text-red-600">{totalExpenses} ₹</div>
+        </Card>
+
+        <Card className="p-4 bg-white">
+          <div className="text-xs text-gray-600 mb-1">Net Profit</div>
+          <div className={`text-xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {netProfit} ₹
+          </div>
         </Card>
       </div>
+
+      {/* Add Expense Modal */}
+      <Dialog open={showExpenseForm} onOpenChange={setShowExpenseForm}>
+        <DialogContent className="max-w-md">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Add Expense</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowExpenseForm(false)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="description">Description *</Label>
+                <Input
+                  id="description"
+                  value={expenseForm.description}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
+                  placeholder="e.g., Electricity bill"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="amount">Amount (₹) *</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  value={expenseForm.amount}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                  placeholder="500"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <select
+                  id="category"
+                  value={expenseForm.category}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="OPERATIONAL">Operational</option>
+                  <option value="MAINTENANCE">Maintenance</option>
+                  <option value="UTILITIES">Utilities</option>
+                  <option value="SALARY">Salary</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="date">Date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={expenseForm.date}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={() => setShowExpenseForm(false)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddExpense}
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                  Add Expense
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
