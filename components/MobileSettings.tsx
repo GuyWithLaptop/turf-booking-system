@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { signOut } from 'next-auth/react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, BellOff, Check } from 'lucide-react';
+import { Bell, BellOff, Check, LogOut } from 'lucide-react';
 import { requestNotificationPermission, subscribeToPushNotifications } from '@/lib/notifications';
 
 export default function MobileSettings() {
@@ -149,6 +150,17 @@ export default function MobileSettings() {
           className="w-full bg-white text-purple-600 hover:bg-purple-50"
         >
           📥 Download APK (Coming Soon)
+        </Button>
+      </Card>
+
+      {/* Logout */}
+      <Card className="p-6 bg-white mt-4">
+        <Button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="w-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center gap-2"
+        >
+          <LogOut className="w-5 h-5" />
+          Logout
         </Button>
       </Card>
     </div>
