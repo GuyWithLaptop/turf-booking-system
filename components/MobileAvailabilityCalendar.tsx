@@ -397,7 +397,7 @@ export default function MobileAvailabilityCalendar() {
                               <Moon className="w-4 h-4 text-blue-400" />
                             )}
                             <span className="text-xs font-medium text-gray-500 uppercase">
-                              {isToday(selectedDate) ? 'TODAY' : format(selectedDate, 'MMM DD').toUpperCase()}
+                              {isToday(selectedDate) ? 'TODAY' : format(selectedDate, 'MMM dd').toUpperCase()}
                             </span>
                           </div>
                           
@@ -477,7 +477,7 @@ export default function MobileAvailabilityCalendar() {
                               <Moon className="w-4 h-4 text-blue-400" />
                             )}
                             <span className="text-xs font-medium text-gray-500 uppercase">
-                              {isToday(selectedDate) ? 'TOMORROW' : format(addDays(selectedDate, 1), 'MMM DD').toUpperCase()}
+                              {isToday(selectedDate) ? 'TOMORROW' : format(addDays(selectedDate, 1), 'MMM dd').toUpperCase()}
                             </span>
                           </div>
                           
