@@ -1,41 +1,119 @@
 {
-  "name": "Turf Booking System",
-  "short_name": "Turf Booking",
-  "description": "Manage your turf bookings, revenue, and availability",
+  "name": "FS Sports Club - Turf Booking",
+  "short_name": "FS Sports",
+  "description": "Complete turf booking management system with slot booking, revenue tracking, and customer management for FS Sports Club",
   "start_url": "/admin",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "background_color": "#ffffff",
   "theme_color": "#10b981",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
+  "dir": "ltr",
+  "lang": "en",
+  "categories": ["business", "productivity", "sports"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "categories": ["business", "productivity"],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
   "shortcuts": [
     {
       "name": "New Booking",
-      "short_name": "Book",
-      "description": "Create a new booking",
+      "short_name": "Book Slot",
+      "description": "Create a new turf booking",
       "url": "/admin?view=slots",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        { 
+          "src": "/icon-192.png", 
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
-      "name": "Today's Revenue",
+      "name": "View Bookings",
+      "short_name": "Bookings",
+      "description": "View all bookings",
+      "url": "/admin?view=list",
+      "icons": [
+        { 
+          "src": "/icon-192.png", 
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Revenue",
       "short_name": "Revenue",
-      "description": "View today's revenue",
+      "description": "View revenue and earnings",
       "url": "/admin?view=revenue",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        { 
+          "src": "/icon-192.png", 
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Home",
+      "description": "View dashboard overview",
+      "url": "/admin?view=dashboard",
+      "icons": [
+        { 
+          "src": "/icon-192.png", 
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/admin",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "name",
+      "text": "description",
+      "url": "link"
+    }
+  },
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "related_applications": [],
+  "iarc_rating_id": ""
 }
