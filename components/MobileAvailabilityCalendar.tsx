@@ -52,69 +52,78 @@ export default function MobileAvailabilityCalendar() {
   const fetchBookings = async () => {
     try {
       const response = await fetch('/api/bookings');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch bookings: ${response.statusText}`);
+      }
       const data = await response.json();
       setBookings(data);
     } catch (error) {
       console.error('Error fetching bookings:', error);
+      setBookings([]); // Set empty array on error to prevent crashes
     }
   };
 
   const generateTimeSlots = () => {
-    const slots: TimeSlot[] = [];
-    
-    // Generate slots for selected day
-    const dayStart = startOfDay(selectedDate);
-    for (let hour = 1; hour < 24; hour += 2) {
-      const slotStart = new Date(dayStart);
-      slotStart.setHours(hour, 0, 0, 0);
-      const slotEnd = addHours(slotStart, 2);
+    try {
+      const slots: TimeSlot[] = [];
+      
+      // Generate slots for selected day
+      const dayStart = startOfDay(selectedDate);
+      for (let hour = 1; hour < 24; hour += 2) {
+        const slotStart = new Date(dayStart);
+        slotStart.setHours(hour, 0, 0, 0);
+        const slotEnd = addHours(slotStart, 2);
 
-      const booking = bookings.find((b) => {
-        const bookingStart = new Date(b.startTime);
-        return (
-          isSameDay(bookingStart, selectedDate) &&
-          bookingStart.getHours() === hour &&
-          b.status !== 'CANCELLED'
-        );
-      });
+        const booking = bookings.find((b) => {
+          const bookingStart = new Date(b.startTime);
+          return (
+            isSameDay(bookingStart, selectedDate) &&
+            bookingStart.getHours() === hour &&
+            b.status !== 'CANCELLED'
+          );
+        });
 
-      slots.push({
-        startTime: slotStart,
-        endTime: slotEnd,
-        isAvailable: !booking,
-        booking,
-        dayLabel: isToday(selectedDate) ? 'Today' : format(selectedDate, 'MMM dd'),
-      });
+        slots.push({
+          startTime: slotStart,
+          endTime: slotEnd,
+          isAvailable: !booking,
+          booking,
+          dayLabel: isToday(selectedDate) ? 'Today' : format(selectedDate, 'MMM dd'),
+        });
+      }
+
+      // Always show next day's slots (full day)
+      const nextDay = addDays(selectedDate, 1);
+      const nextDayStart = startOfDay(nextDay);
+      
+      for (let hour = 1; hour < 24; hour += 2) {
+        const slotStart = new Date(nextDayStart);
+        slotStart.setHours(hour, 0, 0, 0);
+        const slotEnd = addHours(slotStart, 2);
+
+        const booking = bookings.find((b) => {
+          const bookingStart = new Date(b.startTime);
+          return (
+            isSameDay(bookingStart, nextDay) &&
+            bookingStart.getHours() === hour &&
+            b.status !== 'CANCELLED'
+          );
+        });
+
+        slots.push({
+          startTime: slotStart,
+          endTime: slotEnd,
+          isAvailable: !booking,
+          booking,
+          dayLabel: isToday(selectedDate) ? 'Tomorrow' : format(nextDay, 'MMM dd'),
+        });
+      }
+
+      setTimeSlots(slots);
+    } catch (error) {
+      console.error('Error generating time slots:', error);
+      setTimeSlots([]);
     }
-
-    // Always show next day's slots (full day)
-    const nextDay = addDays(selectedDate, 1);
-    const nextDayStart = startOfDay(nextDay);
-    
-    for (let hour = 1; hour < 24; hour += 2) {
-      const slotStart = new Date(nextDayStart);
-      slotStart.setHours(hour, 0, 0, 0);
-      const slotEnd = addHours(slotStart, 2);
-
-      const booking = bookings.find((b) => {
-        const bookingStart = new Date(b.startTime);
-        return (
-          isSameDay(bookingStart, nextDay) &&
-          bookingStart.getHours() === hour &&
-          b.status !== 'CANCELLED'
-        );
-      });
-
-      slots.push({
-        startTime: slotStart,
-        endTime: slotEnd,
-        isAvailable: !booking,
-        booking,
-        dayLabel: isToday(selectedDate) ? 'Tomorrow' : format(nextDay, 'MMM dd'),
-      });
-    }
-
-    setTimeSlots(slots);
   };
 
   const monthDays = eachDayOfInterval({
@@ -123,9 +132,14 @@ export default function MobileAvailabilityCalendar() {
   });
 
   const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setSelectedSlots([]);
-    setShowSlots(true);
+    try {
+      setSelectedDate(date);
+      setSelectedSlots([]);
+      setShowSlots(true);
+    } catch (error) {
+      console.error('Error selecting date:', error);
+      alert('Error loading time slots. Please try again.');
+    }
   };
 
   const toggleSlotSelection = (slot: TimeSlot) => {
@@ -216,7 +230,8 @@ export default function MobileAvailabilityCalendar() {
           });
 
           if (!response.ok) {
-            throw new Error('Failed to create booking');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create booking');
           }
         }
 
@@ -224,8 +239,9 @@ export default function MobileAvailabilityCalendar() {
         resetForm();
         fetchBookings();
       }
-    } catch (error) {
-      alert('Failed to create booking');
+    } catch (error: any) {
+      console.error('Booking error:', error);
+      alert(`Failed to create booking: ${error.message}`);
     }
   };
 
