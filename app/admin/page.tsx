@@ -14,6 +14,7 @@ import MobileDashboard from '@/components/MobileDashboard';
 import MobileAvailabilityCalendar from '@/components/MobileAvailabilityCalendar';
 import MobileBookingsList from '@/components/MobileBookingsList';
 import MobileRevenue from '@/components/MobileRevenue';
+import MobileSettings from '@/components/MobileSettings';
 import { Button } from '@/components/ui/button';
 import { LogOut, Calendar, List, LayoutDashboard, BarChart3, Receipt, Repeat } from 'lucide-react';
 
@@ -181,22 +182,7 @@ function AdminContent() {
           ) : view === 'revenue' ? (
             <MobileRevenue />
           ) : view === 'settings' ? (
-            <div className="pb-24 px-4 pt-6">
-              <h1 className="text-2xl font-bold text-gray-800 mb-6">Settings</h1>
-              <div className="space-y-4">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left p-4 h-auto"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="w-5 h-5 mr-3 text-red-600" />
-                  <div>
-                    <div className="font-semibold text-gray-900">Sign Out</div>
-                    <div className="text-sm text-gray-600">Logged in as {session.user?.name}</div>
-                  </div>
-                </Button>
-              </div>
-            </div>
+            <MobileSettings />
           ) : view === 'recurring' ? (
             <div className="pb-24 px-4 pt-6">
               <RecurringBookingsView />
