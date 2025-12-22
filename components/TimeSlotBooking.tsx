@@ -36,11 +36,18 @@ export default function TimeSlotBooking() {
   const fetchBookings = async () => {
     try {
       const response = await fetch('/api/bookings');
-      const data: Booking[] = await response.json();
-      setBookings(data);
+      const data = await response.json();
+      // Ensure data is an array before setting it
+      if (Array.isArray(data)) {
+        setBookings(data);
+      } else {
+        console.error('Invalid data format:', data);
+        setBookings([]);
+      }
       setLoading(false);
     } catch (error) {
       console.error('Error fetching bookings:', error);
+      setBookings([]);
       setLoading(false);
     }
   };

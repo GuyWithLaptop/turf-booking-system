@@ -56,9 +56,16 @@ export default function MobileRevenue() {
     try {
       const response = await fetch('/api/bookings');
       const data = await response.json();
-      setBookings(data);
+      // Ensure data is an array before setting it
+      if (Array.isArray(data)) {
+        setBookings(data);
+      } else {
+        console.error('Invalid data format:', data);
+        setBookings([]);
+      }
     } catch (error) {
       console.error('Error fetching bookings:', error);
+      setBookings([]);
     } finally {
       setLoading(false);
     }
@@ -67,10 +74,16 @@ export default function MobileRevenue() {
   const fetchExpenses = async () => {
     try {
       const response = await fetch('/api/expenses');
+      if (!response.ok) {
+        console.error('Failed to fetch expenses');
+        setExpenses([]);
+        return;
+      }
       const data = await response.json();
-      setExpenses(data);
+      setExpenses(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching expenses:', error);
+      setExpenses([]);
     }
   };
 
@@ -156,10 +169,10 @@ export default function MobileRevenue() {
   const sevenDaysAgoDate = new Date();
   sevenDaysAgoDate.setDate(sevenDaysAgoDate.getDate() - 7);
   
-  const recentExpenses = expenses.filter((e) => {
+  const recentExpenses = Array.isArray(expenses) ? expenses.filter((e) => {
     const expenseDate = new Date(e.date);
     return expenseDate >= sevenDaysAgoDate;
-  });
+  }) : [];
   
   const totalExpenses = recentExpenses.reduce((sum, e) => sum + e.amount, 0);
   const netProfit = grandTotal - totalExpenses;

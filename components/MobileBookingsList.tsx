@@ -32,9 +32,16 @@ export default function MobileBookingsList() {
     try {
       const response = await fetch('/api/bookings');
       const data = await response.json();
-      setBookings(data);
+      // Ensure data is an array before setting it
+      if (Array.isArray(data)) {
+        setBookings(data);
+      } else {
+        console.error('Invalid data format:', data);
+        setBookings([]);
+      }
     } catch (error) {
       console.error('Error fetching bookings:', error);
+      setBookings([]);
     } finally {
       setLoading(false);
     }

@@ -43,10 +43,17 @@ export default function BookingsList() {
     try {
       const response = await fetch('/api/bookings');
       const data = await response.json();
-      setBookings(data);
+      // Ensure data is an array before setting it
+      if (Array.isArray(data)) {
+        setBookings(data);
+      } else {
+        console.error('Invalid data format:', data);
+        setBookings([]);
+      }
       setLoading(false);
     } catch (error) {
       console.error('Error fetching bookings:', error);
+      setBookings([]);
       setLoading(false);
     }
   };
