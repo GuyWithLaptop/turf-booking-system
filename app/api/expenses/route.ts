@@ -83,9 +83,12 @@ export async function POST(request: Request) {
 
     const { title, description, amount, category, date } = body;
 
-    // Input validation
-    if (!title || typeof title !== 'string' || title.trim().length === 0) {
-      return NextResponse.json({ error: 'Valid title is required' }, { status: 400 });
+    // Input validation - title is now optional, but at least one of title or description is required
+    const hasTitle = title && typeof title === 'string' && title.trim().length > 0;
+    const hasDescription = description && typeof description === 'string' && String(description).trim().length > 0;
+    
+    if (!hasTitle && !hasDescription) {
+      return NextResponse.json({ error: 'Title or description is required' }, { status: 400 });
     }
 
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
@@ -99,8 +102,8 @@ export async function POST(request: Request) {
     }
 
     // Sanitize inputs
-    const sanitizedTitle = title.trim().slice(0, 255); // Limit length
-    const sanitizedDescription = description ? String(description).trim().slice(0, 1000) : null;
+    const sanitizedTitle = hasTitle ? title.trim().slice(0, 255) : null;
+    const sanitizedDescription = hasDescription ? String(description).trim().slice(0, 1000) : null;
     const sanitizedAmount = parseFloat(amount);
 
     // Validate amount limits (prevent extreme values)

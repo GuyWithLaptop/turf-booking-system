@@ -109,7 +109,7 @@ enum ExpenseCategory {
 
 model Expense {
   id          String          @id @default(cuid())
-  title       String
+  title       String?         // Made optional for backward compatibility
   description String?         @db.Text
   amount      Float
   category    ExpenseCategory @default(MAINTENANCE)
