@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -330,6 +330,8 @@ export default function MobileAvailabilityCalendar() {
       {/* Time Slots Modal */}
       <Dialog open={showSlots} onOpenChange={setShowSlots}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogTitle className="sr-only">Available Time Slots</DialogTitle>
+          <DialogDescription className="sr-only">Select time slots for booking</DialogDescription>
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Available slots</h3>
@@ -536,10 +538,9 @@ export default function MobileAvailabilityCalendar() {
       {/* Booking Form Modal */}
       <Dialog open={showBookingForm} onOpenChange={setShowBookingForm}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogTitle className="text-lg font-semibold">Confirm booking</DialogTitle>
+          <DialogDescription className="sr-only">Enter customer details to confirm the booking</DialogDescription>
           <div className="p-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold">Confirm booking</h3>
-            </div>
 
             <div className="space-y-4 mb-6">
               <div>

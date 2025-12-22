@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -144,6 +144,12 @@ Total Amount: Rs. ${booking.charge}
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto p-0 bg-gray-50">
+        <DialogTitle className="sr-only">
+          {isEditing ? 'Edit Booking' : 'Booking Details'}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          {isEditing ? 'Edit the booking information' : 'View detailed information about this booking'}
+        </DialogDescription>
         {isEditing ? (
           // Edit Mode
           <div className="p-6">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FileText, Plus, X } from 'lucide-react';
@@ -22,7 +22,8 @@ type Booking = {
 
 type Expense = {
   id: string;
-  description: string;
+  title: string;
+  description?: string;
   amount: number;
   category: string;
   date: string;
@@ -41,9 +42,10 @@ export default function MobileRevenue() {
   const [loading, setLoading] = useState(true);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [expenseForm, setExpenseForm] = useState({
+    title: '',
     description: '',
     amount: '',
-    category: 'OPERATIONAL',
+    category: 'MAINTENANCE',
     date: format(new Date(), 'yyyy-MM-dd'),
   });
 
@@ -88,7 +90,7 @@ export default function MobileRevenue() {
   };
 
   const handleAddExpense = async () => {
-    if (!expenseForm.description || !expenseForm.amount) {
+    if (!expenseForm.title || !expenseForm.amount) {
       alert('Please fill all required fields');
       return;
     }
@@ -98,6 +100,7 @@ export default function MobileRevenue() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          title: expenseForm.title,
           description: expenseForm.description,
           amount: parseFloat(expenseForm.amount),
           category: expenseForm.category,
@@ -109,14 +112,16 @@ export default function MobileRevenue() {
         alert('Expense added successfully!');
         setShowExpenseForm(false);
         setExpenseForm({
+          title: '',
           description: '',
           amount: '',
-          category: 'OPERATIONAL',
+          category: 'MAINTENANCE',
           date: format(new Date(), 'yyyy-MM-dd'),
         });
         fetchExpenses();
       } else {
-        alert('Failed to add expense');
+        const error = await response.json();
+        alert(error.error || 'Failed to add expense');
       }
     } catch (error) {
       console.error('Error adding expense:', error);
@@ -272,26 +277,29 @@ export default function MobileRevenue() {
       {/* Add Expense Modal */}
       <Dialog open={showExpenseForm} onOpenChange={setShowExpenseForm}>
         <DialogContent className="max-w-md">
+          <DialogTitle className="text-xl font-bold text-gray-900">Add Expense</DialogTitle>
+          <DialogDescription className="sr-only">
+            Add a new expense to track your turf costs
+          </DialogDescription>
           <div className="p-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Add Expense</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowExpenseForm(false)}
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-
             <div className="space-y-4">
               <div>
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  value={expenseForm.title}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
+                  placeholder="e.g., Electricity bill"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
                   value={expenseForm.description}
                   onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
-                  placeholder="e.g., Electricity bill"
+                  placeholder="Additional details (optional)"
                 />
               </div>
 
@@ -314,10 +322,11 @@ export default function MobileRevenue() {
                   onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
                   className="w-full p-2 border rounded-md"
                 >
-                  <option value="OPERATIONAL">Operational</option>
                   <option value="MAINTENANCE">Maintenance</option>
-                  <option value="UTILITIES">Utilities</option>
-                  <option value="SALARY">Salary</option>
+                  <option value="ELECTRICITY">Electricity</option>
+                  <option value="WATER">Water</option>
+                  <option value="STAFF_SALARY">Staff Salary</option>
+                  <option value="EQUIPMENT">Equipment</option>
                   <option value="OTHER">Other</option>
                 </select>
               </div>
