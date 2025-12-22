@@ -174,23 +174,24 @@ export async function POST(request: Request) {
     if (error instanceof Error) {
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);
-      
-      // Check if it's a Prisma error
-      if (error.code === 'P2003') {
-        return NextResponse.json(
-          { error: 'Foreign key constraint error. User reference invalid.' },
-          { status: 500 }
-        );
-      }
-      
-      // Check if it's a database schema error
-      if (error.message.includes('column') || error.message.includes('field')) {
-        return NextResponse.json(
-          { error: 'Database schema mismatch. Please run database migrations.' },
-          { status: 500 }
-        );
-      }
     }
+    
+    // Check if it's a Prisma error (using any type for error.code)
+    if (error?.code === 'P2003') {
+      return NextResponse.json(
+        { error: 'Foreign key constraint error. User reference invalid.' },
+        { status: 500 }
+      );
+    }
+    
+    // Check if it's a database schema error
+    if (error?.message?.includes('column') || error?.message?.includes('field')) {
+      return NextResponse.json(
+        { error: 'Database schema mismatch. Please run database migrations.' },
+        { status: 500 }
+      );
+    }
+    
     // Don't expose internal errors to client
     return NextResponse.json(
       { error: 'Internal server error', details: process.env.NODE_ENV === 'development' ? String(error) : undefined },
