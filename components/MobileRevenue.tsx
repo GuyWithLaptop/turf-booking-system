@@ -82,7 +82,14 @@ export default function MobileRevenue() {
         return;
       }
       const data = await response.json();
-      setExpenses(Array.isArray(data) ? data : []);
+      // Handle both formats: {expenses: [...], pagination: {...}} or just [...]
+      if (data.expenses && Array.isArray(data.expenses)) {
+        setExpenses(data.expenses);
+      } else if (Array.isArray(data)) {
+        setExpenses(data);
+      } else {
+        setExpenses([]);
+      }
     } catch (error) {
       console.error('Error fetching expenses:', error);
       setExpenses([]);
