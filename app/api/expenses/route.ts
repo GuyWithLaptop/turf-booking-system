@@ -127,6 +127,29 @@ export async function POST(request: Request) {
       expenseDate = parsedDate;
     }
 
+    // Verify user exists in database, or get a default owner user
+    let userId = session.user.id;
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!userExists) {
+      // If session user doesn't exist, find the first OWNER user
+      const ownerUser = await prisma.user.findFirst({
+        where: { role: 'OWNER' },
+        select: { id: true },
+      });
+
+      if (!ownerUser) {
+        return NextResponse.json(
+          { error: 'No valid user found. Please ensure at least one admin user exists.' },
+          { status: 500 }
+        );
+      }
+      userId = ownerUser.id;
+    }
+
     // Create expense with sanitized data
     const expense = await prisma.expense.create({
       data: {
@@ -135,7 +158,7 @@ export async function POST(request: Request) {
         amount: sanitizedAmount,
         category,
         date: expenseDate,
-        createdById: session.user.id,
+        createdById: userId,
       },
       include: {
         createdBy: {
@@ -145,12 +168,20 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(expense, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating expense:', error);
     // Log the full error for debugging
     if (error instanceof Error) {
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);
+      
+      // Check if it's a Prisma error
+      if (error.code === 'P2003') {
+        return NextResponse.json(
+          { error: 'Foreign key constraint error. User reference invalid.' },
+          { status: 500 }
+        );
+      }
       
       // Check if it's a database schema error
       if (error.message.includes('column') || error.message.includes('field')) {
