@@ -67,12 +67,12 @@ export default function MobileAvailabilityCalendar() {
     try {
       const slots: TimeSlot[] = [];
       
-      // Generate slots for selected day
+      // Generate 1-hour slots for selected day (12:00 AM to 11:00 PM)
       const dayStart = startOfDay(selectedDate);
-      for (let hour = 1; hour < 24; hour += 2) {
+      for (let hour = 0; hour < 24; hour++) {
         const slotStart = new Date(dayStart);
         slotStart.setHours(hour, 0, 0, 0);
-        const slotEnd = addHours(slotStart, 2);
+        const slotEnd = addHours(slotStart, 1);
 
         const booking = bookings.find((b) => {
           const bookingStart = new Date(b.startTime);
@@ -88,18 +88,18 @@ export default function MobileAvailabilityCalendar() {
           endTime: slotEnd,
           isAvailable: !booking,
           booking,
-          dayLabel: isToday(selectedDate) ? 'Today' : format(selectedDate, 'MMM dd'),
+          dayLabel: format(selectedDate, 'MMMM dd, yyyy'),
         });
       }
 
-      // Always show next day's slots (full day)
+      // Generate 1-hour slots for next day (12:00 AM to 11:00 PM)
       const nextDay = addDays(selectedDate, 1);
       const nextDayStart = startOfDay(nextDay);
       
-      for (let hour = 1; hour < 24; hour += 2) {
+      for (let hour = 0; hour < 24; hour++) {
         const slotStart = new Date(nextDayStart);
         slotStart.setHours(hour, 0, 0, 0);
-        const slotEnd = addHours(slotStart, 2);
+        const slotEnd = addHours(slotStart, 1);
 
         const booking = bookings.find((b) => {
           const bookingStart = new Date(b.startTime);
@@ -115,7 +115,7 @@ export default function MobileAvailabilityCalendar() {
           endTime: slotEnd,
           isAvailable: !booking,
           booking,
-          dayLabel: isToday(selectedDate) ? 'Tomorrow' : format(nextDay, 'MMM dd'),
+          dayLabel: format(nextDay, 'MMMM dd, yyyy'),
         });
       }
 
@@ -329,206 +329,159 @@ export default function MobileAvailabilityCalendar() {
 
       {/* Time Slots Modal */}
       <Dialog open={showSlots} onOpenChange={setShowSlots}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
           <DialogTitle className="sr-only">Available Time Slots</DialogTitle>
           <DialogDescription className="sr-only">Select time slots for booking</DialogDescription>
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Available slots</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowSlots(false)}>
-                <X className="w-5 h-5" />
-              </Button>
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Available slots</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">{formData.customerName || 'ajshs'}</span>
+                <span className="text-xl">👨</span>
+              </div>
             </div>
 
-            {/* Selected slots count */}
+            {/* Selected slots indicator */}
             {selectedSlots.length > 0 && (
-              <div className="mb-4 bg-purple-50 border-2 border-purple-300 rounded-lg p-3 text-center">
-                <span className="font-semibold text-purple-700">
+              <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center justify-between">
+                <span className="font-semibold text-emerald-700">
                   {selectedSlots.length} Slot{selectedSlots.length > 1 ? 's' : ''} Selected
                 </span>
                 <button
                   onClick={() => setSelectedSlots([])}
-                  className="ml-3 text-sm text-purple-600 underline"
+                  className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
                 >
-                  Clear All
+                  Clear
                 </button>
               </div>
             )}
 
-            {/* Today's Slots */}
-            {timeSlots.filter(slot => {
-              const slotDate = startOfDay(slot.startTime);
-              const selected = startOfDay(selectedDate);
-              return slotDate.getTime() === selected.getTime();
-            }).length > 0 && (
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sun className="w-5 h-5 text-amber-500" />
-                  <h4 className="text-base font-semibold text-gray-800">
-                    {isToday(selectedDate) ? 'Today' : format(selectedDate, 'MMMM dd')} - Dec {format(selectedDate, 'dd')}
-                  </h4>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {timeSlots
-                    .filter(slot => {
-                      const slotDate = startOfDay(slot.startTime);
-                      const selected = startOfDay(selectedDate);
-                      return slotDate.getTime() === selected.getTime();
-                    })
-                    .map((slot, idx) => {
-                      const hour = slot.startTime.getHours();
-                      const isDaytime = hour >= 6 && hour < 18;
-                      const selected = isSlotSelected(slot);
-                      
-                      return (
-                        <div
-                          key={idx}
-                          className={`p-4 rounded-xl border transition-all ${
-                            selected
-                              ? 'border-purple-500 bg-purple-50 shadow-md'
-                              : slot.isAvailable
-                              ? 'border-gray-200 bg-white'
-                              : 'border-gray-100 bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 mb-3">
-                            {isDaytime ? (
-                              <Sun className="w-4 h-4 text-amber-500" />
-                            ) : (
-                              <Moon className="w-4 h-4 text-blue-400" />
-                            )}
-                            <span className="text-xs font-medium text-gray-500 uppercase">
-                              {isToday(selectedDate) ? 'TODAY' : format(selectedDate, 'MMM dd').toUpperCase()}
-                            </span>
-                          </div>
-                          
-                          <div className="text-center mb-3">
-                            <div className="text-2xl font-bold text-gray-800 mb-1">
-                              {format(slot.startTime, 'h:mm a')}
-                            </div>
-                            <div className="text-xl font-bold text-gray-800">
-                              {format(slot.endTime, 'h:mm a')}
-                            </div>
-                          </div>
+            {/* Render slots grouped by date */}
+            {(() => {
+              const day1Slots = timeSlots.filter(slot => 
+                isSameDay(slot.startTime, selectedDate)
+              );
+              const day2Slots = timeSlots.filter(slot => 
+                isSameDay(slot.startTime, addDays(selectedDate, 1))
+              );
 
-                          {slot.isAvailable ? (
+              return (
+                <>
+                  {/* First Day */}
+                  {day1Slots.length > 0 && (
+                    <div className="mb-6">
+                      <div className="bg-emerald-100 text-emerald-800 text-center py-2 rounded-lg font-semibold mb-4">
+                        {format(selectedDate, 'MMMM dd, yyyy')}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        {day1Slots.map((slot, idx) => {
+                          const hour = slot.startTime.getHours();
+                          const isDaytime = hour >= 6 && hour < 18;
+                          const selected = isSlotSelected(slot);
+                          
+                          return (
                             <button
+                              key={idx}
                               onClick={() => toggleSlotSelection(slot)}
-                              className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${
+                              disabled={!slot.isAvailable}
+                              className={`p-3 rounded-lg border-2 text-left transition-all ${
                                 selected
-                                  ? 'bg-purple-600 text-white shadow-md'
-                                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                                  ? 'border-emerald-500 bg-emerald-50'
+                                  : slot.isAvailable
+                                  ? 'border-gray-200 bg-white hover:border-emerald-300'
+                                  : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
                               }`}
                             >
-                              {selected ? '✓ Selected' : 'Available'}
+                              <div className="flex items-start gap-2">
+                                {isDaytime ? (
+                                  <Sun className="w-5 h-5 text-amber-500 mt-1" />
+                                ) : (
+                                  <Moon className="w-5 h-5 text-blue-500 mt-1" />
+                                )}
+                                <div className="flex-1">
+                                  <div className={`text-base font-semibold ${
+                                    slot.isAvailable ? 'text-emerald-700' : 'text-gray-400'
+                                  }`}>
+                                    {format(slot.startTime, 'hh:mm a')} - {format(slot.endTime, 'hh:mm a')}
+                                  </div>
+                                </div>
+                              </div>
                             </button>
-                          ) : (
-                            <div className="w-full py-2 rounded-lg text-sm font-semibold bg-gray-200 text-gray-500 text-center">
-                              Booked
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            )}
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
-            {/* Tomorrow/Next Day's Slots */}
-            {timeSlots.filter(slot => {
-              const slotDate = startOfDay(slot.startTime);
-              const nextDay = startOfDay(addDays(selectedDate, 1));
-              return slotDate.getTime() === nextDay.getTime();
-            }).length > 0 && (
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Moon className="w-5 h-5 text-blue-500" />
-                  <h4 className="text-base font-semibold text-gray-800">
-                    {isToday(selectedDate) ? 'Tomorrow' : format(addDays(selectedDate, 1), 'MMMM dd')} - Dec {format(addDays(selectedDate, 1), 'dd')}
-                  </h4>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {timeSlots
-                    .filter(slot => {
-                      const slotDate = startOfDay(slot.startTime);
-                      const nextDay = startOfDay(addDays(selectedDate, 1));
-                      return slotDate.getTime() === nextDay.getTime();
-                    })
-                    .map((slot, idx) => {
-                      const hour = slot.startTime.getHours();
-                      const isDaytime = hour >= 6 && hour < 18;
-                      const selected = isSlotSelected(slot);
+                  {/* Second Day */}
+                  {day2Slots.length > 0 && (
+                    <div className="mb-6">
+                      <div className="bg-emerald-100 text-emerald-800 text-center py-2 rounded-lg font-semibold mb-4">
+                        {format(addDays(selectedDate, 1), 'MMMM dd, yyyy')}
+                      </div>
                       
-                      return (
-                        <div
-                          key={`tomorrow-${idx}`}
-                          className={`p-4 rounded-xl border transition-all ${
-                            selected
-                              ? 'border-purple-500 bg-purple-50 shadow-md'
-                              : slot.isAvailable
-                              ? 'border-gray-200 bg-white'
-                              : 'border-gray-100 bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 mb-3">
-                            {isDaytime ? (
-                              <Sun className="w-4 h-4 text-amber-500" />
-                            ) : (
-                              <Moon className="w-4 h-4 text-blue-400" />
-                            )}
-                            <span className="text-xs font-medium text-gray-500 uppercase">
-                              {isToday(selectedDate) ? 'TOMORROW' : format(addDays(selectedDate, 1), 'MMM dd').toUpperCase()}
-                            </span>
-                          </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {day2Slots.map((slot, idx) => {
+                          const hour = slot.startTime.getHours();
+                          const isDaytime = hour >= 6 && hour < 18;
+                          const selected = isSlotSelected(slot);
                           
-                          <div className="text-center mb-3">
-                            <div className="text-2xl font-bold text-gray-800 mb-1">
-                              {format(slot.startTime, 'h:mm a')}
-                            </div>
-                            <div className="text-xl font-bold text-gray-800">
-                              {format(slot.endTime, 'h:mm a')}
-                            </div>
-                          </div>
-
-                          {slot.isAvailable ? (
+                          return (
                             <button
+                              key={idx}
                               onClick={() => toggleSlotSelection(slot)}
-                              className={`w-full py-2 rounded-lg text-sm font-semibold transition-all ${
+                              disabled={!slot.isAvailable}
+                              className={`p-3 rounded-lg border-2 text-left transition-all ${
                                 selected
-                                  ? 'bg-purple-600 text-white shadow-md'
-                                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                                  ? 'border-emerald-500 bg-emerald-50'
+                                  : slot.isAvailable
+                                  ? 'border-gray-200 bg-white hover:border-emerald-300'
+                                  : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
                               }`}
                             >
-                              {selected ? '✓ Selected' : 'Available'}
+                              <div className="flex items-start gap-2">
+                                {isDaytime ? (
+                                  <Sun className="w-5 h-5 text-amber-500 mt-1" />
+                                ) : (
+                                  <Moon className="w-5 h-5 text-blue-500 mt-1" />
+                                )}
+                                <div className="flex-1">
+                                  <div className={`text-base font-semibold ${
+                                    slot.isAvailable ? 'text-emerald-700' : 'text-gray-400'
+                                  }`}>
+                                    {format(slot.startTime, 'hh:mm a')} - {format(slot.endTime, 'hh:mm a')}
+                                  </div>
+                                </div>
+                              </div>
                             </button>
-                          ) : (
-                            <div className="w-full py-2 rounded-lg text-sm font-semibold bg-gray-200 text-gray-500 text-center">
-                              Booked
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            )}
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
-            <div className="flex gap-3 sticky bottom-0 bg-white pt-4 border-t">
+            {/* Action Buttons */}
+            <div className="flex gap-3 mt-6">
               <Button
+                onClick={() => {
+                  setShowSlots(false);
+                  setSelectedSlots([]);
+                }}
                 variant="outline"
-                className="flex-1"
-                onClick={() => { setShowSlots(false); setSelectedSlots([]); }}
+                className="flex-1 py-6 text-lg font-semibold"
               >
                 Cancel
               </Button>
               <Button
-                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
                 onClick={handleBookNow}
                 disabled={selectedSlots.length === 0}
+                className="flex-1 py-6 text-lg font-semibold bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
               >
-                Book {selectedSlots.length > 0 && `(${selectedSlots.length})`}
+                Book
               </Button>
             </div>
           </div>
