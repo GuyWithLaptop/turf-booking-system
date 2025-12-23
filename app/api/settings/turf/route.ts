@@ -12,39 +12,47 @@ export async function PATCH(request: NextRequest) {
 
     const { turfName, turfAddress, turfNotes, turfPhone } = await request.json();
 
-    // Update or create app settings with turf info
-    // Using type assertion since schema hasn't been migrated yet
-    const settings = await prisma.appSettings.upsert({
-      where: { id: 1 },
-      update: {
-        ...(turfName !== undefined && { turfName: turfName || 'FS Sports Club' }),
-        ...(turfAddress !== undefined && { turfAddress: turfAddress || '' }),
-        ...(turfNotes !== undefined && { turfNotes: turfNotes || '' }),
-        ...(turfPhone !== undefined && { turfPhone: turfPhone || '' }),
-        updatedAt: new Date(),
-      } as any,
-      create: {
-        id: 1,
+    // Try to update or create app settings with turf info
+    try {
+      const settings = await prisma.$executeRaw`
+        INSERT INTO app_settings (id, "defaultPrice", "turfName", "turfAddress", "turfNotes", "turfPhone", "updatedAt")
+        VALUES (1, 500, ${turfName || 'FS Sports Club'}, ${turfAddress || ''}, ${turfNotes || ''}, ${turfPhone || ''}, NOW())
+        ON CONFLICT (id) 
+        DO UPDATE SET 
+          "turfName" = COALESCE(EXCLUDED."turfName", app_settings."turfName"),
+          "turfAddress" = COALESCE(EXCLUDED."turfAddress", app_settings."turfAddress"),
+          "turfNotes" = COALESCE(EXCLUDED."turfNotes", app_settings."turfNotes"),
+          "turfPhone" = COALESCE(EXCLUDED."turfPhone", app_settings."turfPhone"),
+          "updatedAt" = NOW()
+      `;
+
+      return NextResponse.json({
+        success: true,
         turfName: turfName || 'FS Sports Club',
         turfAddress: turfAddress || '',
         turfNotes: turfNotes || '',
         turfPhone: turfPhone || '',
-        defaultPrice: 500,
-        sports: ['Football', 'Cricket', 'Basketball'],
-      } as any,
-    });
-
-    return NextResponse.json({
-      success: true,
-      turfName: (settings as any).turfName || 'FS Sports Club',
-      turfAddress: (settings as any).turfAddress || '',
-      turfNotes: (settings as any).turfNotes || '',
-      turfPhone: (settings as any).turfPhone || '',
-    });
-  } catch (error) {
+      });
+    } catch (dbError: any) {
+      console.error('Database error:', dbError);
+      
+      // If columns don't exist, return helpful error
+      if (dbError.message?.includes('column') && dbError.message?.includes('does not exist')) {
+        return NextResponse.json({
+          error: 'Database migration required. Please run fix-database.sql in Supabase SQL editor.',
+          details: dbError.message
+        }, { status: 500 });
+      }
+      
+      throw dbError;
+    }
+  } catch (error: any) {
     console.error('Error updating turf info:', error);
     return NextResponse.json(
-      { error: 'Failed to update turf info' },
+      { 
+        error: 'Failed to update turf info',
+        message: error.message || 'Unknown error'
+      },
       { status: 500 }
     );
   }

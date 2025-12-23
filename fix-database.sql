@@ -19,19 +19,39 @@ CREATE TABLE IF NOT EXISTS "sports" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS "sports_name_key" ON "sports"("name");
 
--- 3. Create AppSettings table
-CREATE TABLE IF NOT EXISTS "app_settings" (
-    "id" SERIAL NOT NULL,
-    "defaultPrice" INTEGER NOT NULL DEFAULT 500,
-    "turfName" TEXT NOT NULL DEFAULT 'FS Sports Club',
-    "turfAddress" TEXT NOT NULL DEFAULT '',
-    "turfNotes" TEXT NOT NULL DEFAULT '',
-    "turfPhone" TEXT NOT NULL DEFAULT '',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+-- 3. Create or update AppSettings table
+-- First check if table exists and add missing columns
+DO $$ 
+BEGIN
+    -- Create table if it doesn't exist
+    CREATE TABLE IF NOT EXISTS "app_settings" (
+        "id" SERIAL NOT NULL,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "app_settings_pkey" PRIMARY KEY ("id")
+    );
 
-    CONSTRAINT "app_settings_pkey" PRIMARY KEY ("id")
-);
+    -- Add columns if they don't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'app_settings' AND column_name = 'defaultPrice') THEN
+        ALTER TABLE "app_settings" ADD COLUMN "defaultPrice" INTEGER NOT NULL DEFAULT 500;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'app_settings' AND column_name = 'turfName') THEN
+        ALTER TABLE "app_settings" ADD COLUMN "turfName" TEXT NOT NULL DEFAULT 'FS Sports Club';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'app_settings' AND column_name = 'turfAddress') THEN
+        ALTER TABLE "app_settings" ADD COLUMN "turfAddress" TEXT NOT NULL DEFAULT '';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'app_settings' AND column_name = 'turfNotes') THEN
+        ALTER TABLE "app_settings" ADD COLUMN "turfNotes" TEXT NOT NULL DEFAULT '';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'app_settings' AND column_name = 'turfPhone') THEN
+        ALTER TABLE "app_settings" ADD COLUMN "turfPhone" TEXT NOT NULL DEFAULT '';
+    END IF;
+END $$;
 
 -- 4. Insert default sports
 INSERT INTO "sports" ("name", "icon", "active", "sharesGround") VALUES

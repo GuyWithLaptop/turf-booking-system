@@ -11,20 +11,51 @@ export async function GET() {
     }
 
     try {
-      const settings = await prisma.appSettings.findFirst();
+      // Use raw query to handle potentially missing columns
+      const settings = await prisma.$queryRaw`
+        SELECT 
+          COALESCE("defaultPrice", 500) as "defaultPrice",
+          COALESCE("turfName", 'FS Sports Club') as "turfName",
+          COALESCE("turfAddress", '') as "turfAddress",
+          COALESCE("turfNotes", '') as "turfNotes",
+          COALESCE("turfPhone", '') as "turfPhone"
+        FROM app_settings 
+        WHERE id = 1 
+        LIMIT 1
+      ` as any[];
+      
+      if (settings && settings.length > 0) {
+        return NextResponse.json(settings[0]);
+      }
+      
+      // No settings found, return defaults
       return NextResponse.json({ 
-        defaultPrice: settings?.defaultPrice || 500 
+        defaultPrice: 500,
+        turfName: 'FS Sports Club',
+        turfAddress: '',
+        turfNotes: '',
+        turfPhone: ''
       });
     } catch (dbError: any) {
-      // Table doesn't exist yet, return defaults
-      if (dbError.code === 'P2021') {
-        return NextResponse.json({ defaultPrice: 500 });
-      }
-      throw dbError;
+      console.error('Database error:', dbError);
+      // Table doesn't exist or columns missing, return defaults
+      return NextResponse.json({ 
+        defaultPrice: 500,
+        turfName: 'FS Sports Club',
+        turfAddress: '',
+        turfNotes: '',
+        turfPhone: ''
+      });
     }
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return NextResponse.json({ defaultPrice: 500 }, { status: 200 });
+    return NextResponse.json({ 
+      defaultPrice: 500,
+      turfName: 'FS Sports Club',
+      turfAddress: '',
+      turfNotes: '',
+      turfPhone: ''
+    }, { status: 200 });
   }
 }
 
