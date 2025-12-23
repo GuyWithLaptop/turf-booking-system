@@ -52,10 +52,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Recurring end date must be after start time' }, { status: 400 });
     }
 
-    // Limit to 6 months max
-    const sixMonthsLater = addWeeks(startTime, 26);
-    if (isAfter(recurringEndDate, sixMonthsLater)) {
-      return NextResponse.json({ error: 'Recurring bookings limited to 6 months' }, { status: 400 });
+    // Limit to 1.5 years (78 weeks) max
+    const oneAndHalfYearsLater = addWeeks(startTime, 78);
+    if (isAfter(recurringEndDate, oneAndHalfYearsLater)) {
+      return NextResponse.json({ error: 'Recurring bookings limited to 1.5 years' }, { status: 400 });
     }
 
     // Calculate the time duration (hours)
