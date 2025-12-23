@@ -10,14 +10,21 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const settings = await prisma.appSettings.findFirst();
-
-    return NextResponse.json({ 
-      defaultPrice: settings?.defaultPrice || 500 
-    });
+    try {
+      const settings = await prisma.appSettings.findFirst();
+      return NextResponse.json({ 
+        defaultPrice: settings?.defaultPrice || 500 
+      });
+    } catch (dbError: any) {
+      // Table doesn't exist yet, return defaults
+      if (dbError.code === 'P2021') {
+        return NextResponse.json({ defaultPrice: 500 });
+      }
+      throw dbError;
+    }
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
+    return NextResponse.json({ defaultPrice: 500 }, { status: 200 });
   }
 }
 
