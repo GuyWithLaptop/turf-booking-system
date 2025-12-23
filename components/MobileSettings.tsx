@@ -41,12 +41,25 @@ export default function MobileSettings() {
   }, [isOwner]);
 
   const fetchSports = async () => {
+    // Check session storage cache first
+    const cached = sessionStorage.getItem('availableSports');
+    if (cached) {
+      try {
+        const sports = JSON.parse(cached);
+        setSports(sports);
+        return;
+      } catch (e) {
+        // Invalid cache
+      }
+    }
+
     try {
       const response = await fetch('/api/settings/sports');
       if (response.ok) {
         const data = await response.json();
         if (data.sports && data.sports.length > 0) {
           setSports(data.sports);
+          sessionStorage.setItem('availableSports', JSON.stringify(data.sports));
         }
       }
     } catch (error) {
@@ -55,12 +68,27 @@ export default function MobileSettings() {
   };
 
   const fetchSettings = async () => {
+    // Check session storage cache
+    const cached = sessionStorage.getItem('appSettings');
+    if (cached) {
+      try {
+        const settings = JSON.parse(cached);
+        if (settings.defaultPrice) {
+          setDefaultPrice(settings.defaultPrice.toString());
+          return;
+        }
+      } catch (e) {
+        // Invalid cache
+      }
+    }
+
     try {
       const response = await fetch('/api/settings');
       if (response.ok) {
         const data = await response.json();
         if (data.defaultPrice) {
           setDefaultPrice(data.defaultPrice.toString());
+          sessionStorage.setItem('appSettings', JSON.stringify(data));
         }
       }
     } catch (error) {
@@ -106,8 +134,11 @@ export default function MobileSettings() {
       
       if (response.ok) {
         const data = await response.json();
-        setSports([...sports, data.name]);
+        const updatedSports = [...sports, data.name];
+        setSports(updatedSports);
         setNewSport('');
+        // Update cache
+        sessionStorage.setItem('availableSports', JSON.stringify(updatedSports));
       }
     } catch (error) {
       console.error('Error adding sport:', error);
@@ -124,7 +155,10 @@ export default function MobileSettings() {
       });
       
       if (response.ok) {
-        setSports(sports.filter(s => s !== sportName));
+        const updatedSports = sports.filter(s => s !== sportName);
+        setSports(updatedSports);
+        // Update cache
+        sessionStorage.setItem('availableSports', JSON.stringify(updatedSports));
       }
     } catch (error) {
       console.error('Error removing sport:', error);
@@ -142,6 +176,8 @@ export default function MobileSettings() {
       
       if (response.ok) {
         setEditingPrice(false);
+        // Update cache
+        sessionStorage.setItem('appSettings', JSON.stringify({ defaultPrice: parseInt(defaultPrice) }));
         alert('Default price updated');
       }
     } catch (error) {
@@ -457,7 +493,7 @@ export default function MobileSettings() {
 
       {/* Recurring Bookings Tab */}
       {activeTab === 'recurring' && (
-        <div className="bg-white rounded-lg p-4">
+        <div className="bg-white rounded-lg p-3 sm:p-4 max-w-full overflow-hidden">
           <RecurringBookingsView />
         </div>
       )}

@@ -54,13 +54,28 @@ export default function MobileAvailabilityCalendar() {
   }, [selectedDate, bookings]);
 
   const fetchSports = async () => {
+    // Check cache first
+    const cached = sessionStorage.getItem('availableSports');
+    if (cached) {
+      try {
+        const sports = JSON.parse(cached);
+        setAvailableSports(sports);
+        setSelectedSport(sports[0]);
+        return;
+      } catch (e) {
+        // Invalid cache, fetch fresh
+      }
+    }
+
     try {
       const response = await fetch('/api/settings/sports');
       if (response.ok) {
         const data = await response.json();
         if (data.sports && data.sports.length > 0) {
           setAvailableSports(data.sports);
-          setSelectedSport(data.sports[0]); // Set first sport as default
+          setSelectedSport(data.sports[0]);
+          // Cache for session
+          sessionStorage.setItem('availableSports', JSON.stringify(data.sports));
         }
       }
     } catch (error) {

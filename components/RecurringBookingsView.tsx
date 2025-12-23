@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -156,85 +156,85 @@ export default function RecurringBookingsView() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 max-w-full overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Recurring Bookings</h2>
-          <p className="text-gray-600">Manage booking series and groups</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Recurring Bookings</h2>
+          <p className="text-sm text-gray-600">Manage booking series</p>
         </div>
-        <Badge variant="secondary" className="text-lg px-4 py-2">
+        <Badge variant="secondary" className="text-base sm:text-lg px-3 py-1 sm:px-4 sm:py-2 w-fit">
           {recurringGroups.length} Series
         </Badge>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3 sm:gap-4">
         {recurringGroups.map((group) => {
           const firstBooking = group.bookings[0];
           const isExpanded = selectedGroup === group.parentBookingId;
 
           return (
-            <Card key={group.parentBookingId} className="border-2 border-gray-200 hover:border-emerald-300 transition-all">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Repeat className="w-6 h-6 text-emerald-600" />
-                      <CardTitle className="text-xl">{firstBooking?.customerName}</CardTitle>
+            <Card key={group.parentBookingId} className="border-2 border-gray-200 hover:border-emerald-300 transition-all overflow-hidden">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Repeat className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600 flex-shrink-0" />
+                      <CardTitle className="text-lg sm:text-xl truncate">{firstBooking?.customerName}</CardTitle>
                     </div>
                     <CardDescription className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4" />
-                        <span>Every {getDayNames(group.recurringDays)}</span>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm">
+                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span className="truncate">Every {getDayNames(group.recurringDays)}</span>
                       </div>
-                      <div className="text-sm">
+                      <div className="text-xs sm:text-sm">
                         {firstBooking && (
                           <>
                             {format(new Date(firstBooking.startTime), 'h:mm a')} - {format(new Date(firstBooking.endTime), 'h:mm a')}
                           </>
                         )}
                       </div>
-                      <div className="text-sm">
+                      <div className="text-xs sm:text-sm truncate">
                         📞 {firstBooking?.customerPhone}
                       </div>
                     </CardDescription>
                   </div>
 
-                  <div className="flex flex-col gap-2 items-end">
-                    <Badge className="bg-emerald-600">
-                      ₹{firstBooking?.charge} per session
+                  <div className="flex flex-col gap-2 items-end flex-shrink-0">
+                    <Badge className="bg-emerald-600 text-xs sm:text-sm whitespace-nowrap">
+                      ₹{firstBooking?.charge}
                     </Badge>
                   </div>
                 </div>
               </CardHeader>
 
-              <CardContent>
+              <CardContent className="pt-0">
                 {/* Stats */}
-                <div className="grid grid-cols-4 gap-3 mb-4">
-                  <div className="bg-blue-50 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-blue-700">{group.totalBookings}</div>
-                    <div className="text-xs text-blue-600">Total</div>
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  <div className="bg-blue-50 rounded-lg p-2 text-center">
+                    <div className="text-lg sm:text-2xl font-bold text-blue-700">{group.totalBookings}</div>
+                    <div className="text-[10px] sm:text-xs text-blue-600">Total</div>
                   </div>
-                  <div className="bg-emerald-50 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-emerald-700">{group.futureBookings}</div>
-                    <div className="text-xs text-emerald-600">Upcoming</div>
+                  <div className="bg-emerald-50 rounded-lg p-2 text-center">
+                    <div className="text-lg sm:text-2xl font-bold text-emerald-700">{group.futureBookings}</div>
+                    <div className="text-[10px] sm:text-xs text-emerald-600">Upcoming</div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-gray-700">{group.completedBookings}</div>
-                    <div className="text-xs text-gray-600">Completed</div>
+                  <div className="bg-gray-50 rounded-lg p-2 text-center">
+                    <div className="text-lg sm:text-2xl font-bold text-gray-700">{group.completedBookings}</div>
+                    <div className="text-[10px] sm:text-xs text-gray-600">Done</div>
                   </div>
-                  <div className="bg-red-50 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-red-700">{group.cancelledBookings}</div>
-                    <div className="text-xs text-red-600">Cancelled</div>
+                  <div className="bg-red-50 rounded-lg p-2 text-center">
+                    <div className="text-lg sm:text-2xl font-bold text-red-700">{group.cancelledBookings}</div>
+                    <div className="text-[10px] sm:text-xs text-red-600">Cancelled</div>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setSelectedGroup(isExpanded ? null : group.parentBookingId)}
-                    className="flex-1"
+                    className="flex-1 text-xs sm:text-sm"
                   >
                     {isExpanded ? 'Hide Details' : 'View All Dates'}
                   </Button>
@@ -242,43 +242,43 @@ export default function RecurringBookingsView() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleCancelSeries(group.parentBookingId, 'future')}
-                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 text-xs sm:text-sm"
                   >
-                    <AlertCircle className="w-4 h-4 mr-1" />
+                    <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                     Cancel Future
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleCancelSeries(group.parentBookingId, 'all')}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs sm:text-sm"
                   >
-                    <Trash2 className="w-4 h-4 mr-1" />
+                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                     Cancel All
                   </Button>
                 </div>
 
                 {/* Expanded Booking List */}
                 {isExpanded && (
-                  <div className="mt-4 border-t pt-4 max-h-96 overflow-y-auto">
-                    <h4 className="font-semibold text-sm text-gray-700 mb-3">All Bookings in Series:</h4>
+                  <div className="mt-3 border-t pt-3 max-h-64 sm:max-h-96 overflow-y-auto">
+                    <h4 className="font-semibold text-xs sm:text-sm text-gray-700 mb-2">All Bookings in Series:</h4>
                     <div className="space-y-2">
                       {group.bookings
                         .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
                         .map((booking) => (
                           <div
                             key={booking.id}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm"
+                            className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg text-xs sm:text-sm gap-2"
                           >
-                            <div>
-                              <div className="font-medium">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium truncate">
                                 {format(new Date(booking.startTime), 'EEE, MMM dd, yyyy')}
                               </div>
-                              <div className="text-xs text-gray-600">
+                              <div className="text-[10px] sm:text-xs text-gray-600">
                                 {format(new Date(booking.startTime), 'h:mm a')} - {format(new Date(booking.endTime), 'h:mm a')}
                               </div>
                             </div>
-                            <Badge className={getStatusBadge(booking.status)}>
+                            <Badge className={`${getStatusBadge(booking.status)} text-[10px] sm:text-xs flex-shrink-0`}>
                               {booking.status}
                             </Badge>
                           </div>
