@@ -771,37 +771,38 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
 
       {/* Success Dialog */}
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent className="max-w-md p-0 overflow-hidden">
-          <div className="text-center py-8 px-6">
-            {/* Celebration Icon */}
-            <div className="relative mx-auto w-32 h-32 mb-6">
+        <DialogContent className="max-w-md max-h-[85vh] p-0 overflow-hidden flex flex-col">
+          <div className="overflow-y-auto flex-1">
+            <div className="text-center py-6 px-6">
+              {/* Celebration Icon */}
+              <div className="relative mx-auto w-24 h-24 mb-4">
               {/* Confetti background */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="absolute w-full h-full">
-                  <div className="absolute top-2 left-8 w-3 h-3 bg-yellow-400 rounded-sm rotate-12"></div>
-                  <div className="absolute top-6 right-12 w-2 h-2 bg-pink-500 rounded-sm -rotate-12"></div>
-                  <div className="absolute top-10 left-16 w-2 h-2 bg-blue-400 rounded-sm rotate-45"></div>
-                  <div className="absolute top-3 right-6 w-3 h-3 bg-red-500 rounded-sm -rotate-45"></div>
-                  <div className="absolute bottom-8 left-4 w-2 h-2 bg-green-400 rounded-sm rotate-12"></div>
-                  <div className="absolute bottom-10 right-8 w-3 h-3 bg-purple-500 rounded-sm -rotate-12"></div>
-                  <div className="absolute bottom-4 left-12 w-2 h-2 bg-yellow-500 rounded-sm rotate-45"></div>
-                  <div className="absolute bottom-6 right-4 w-2 h-2 bg-pink-400 rounded-sm -rotate-45"></div>
+                  <div className="absolute top-1 left-6 w-2 h-2 bg-yellow-400 rounded-sm rotate-12"></div>
+                  <div className="absolute top-4 right-8 w-1.5 h-1.5 bg-pink-500 rounded-sm -rotate-12"></div>
+                  <div className="absolute top-6 left-10 w-1.5 h-1.5 bg-blue-400 rounded-sm rotate-45"></div>
+                  <div className="absolute top-2 right-4 w-2 h-2 bg-red-500 rounded-sm -rotate-45"></div>
+                  <div className="absolute bottom-6 left-3 w-1.5 h-1.5 bg-green-400 rounded-sm rotate-12"></div>
+                  <div className="absolute bottom-6 right-6 w-2 h-2 bg-purple-500 rounded-sm -rotate-12"></div>
+                  <div className="absolute bottom-3 left-8 w-1.5 h-1.5 bg-yellow-500 rounded-sm rotate-45"></div>
+                  <div className="absolute bottom-4 right-3 w-1.5 h-1.5 bg-pink-400 rounded-sm -rotate-45"></div>
                   {/* More confetti */}
-                  <div className="absolute top-1 left-20 w-1.5 h-1.5 bg-orange-400 rounded-sm rotate-12"></div>
-                  <div className="absolute top-8 right-20 w-1.5 h-1.5 bg-cyan-500 rounded-sm -rotate-12"></div>
-                  <div className="absolute bottom-12 left-24 w-1.5 h-1.5 bg-lime-400 rounded-sm rotate-45"></div>
-                  <div className="absolute bottom-2 right-16 w-2 h-2 bg-indigo-500 rounded-sm -rotate-45"></div>
+                  <div className="absolute top-1 left-14 w-1 h-1 bg-orange-400 rounded-sm rotate-12"></div>
+                  <div className="absolute top-5 right-14 w-1 h-1 bg-cyan-500 rounded-sm -rotate-12"></div>
+                  <div className="absolute bottom-8 left-16 w-1 h-1 bg-lime-400 rounded-sm rotate-45"></div>
+                  <div className="absolute bottom-1 right-12 w-1.5 h-1.5 bg-indigo-500 rounded-sm -rotate-45"></div>
                   {/* Rays */}
-                  <div className="absolute top-0 left-1/2 w-1 h-8 bg-gray-300 -translate-x-1/2 origin-bottom rotate-0"></div>
-                  <div className="absolute top-2 left-1/2 w-1 h-10 bg-gray-300 -translate-x-1/2 origin-bottom rotate-45"></div>
-                  <div className="absolute top-2 left-1/2 w-1 h-10 bg-gray-300 -translate-x-1/2 origin-bottom -rotate-45"></div>
-                  <div className="absolute top-4 left-1/2 w-1 h-12 bg-gray-300 -translate-x-1/2 origin-bottom rotate-90"></div>
-                  <div className="absolute top-4 left-1/2 w-1 h-12 bg-gray-300 -translate-x-1/2 origin-bottom -rotate-90"></div>
+                  <div className="absolute top-0 left-1/2 w-0.5 h-6 bg-gray-300 -translate-x-1/2 origin-bottom rotate-0"></div>
+                  <div className="absolute top-1 left-1/2 w-0.5 h-7 bg-gray-300 -translate-x-1/2 origin-bottom rotate-45"></div>
+                  <div className="absolute top-1 left-1/2 w-0.5 h-7 bg-gray-300 -translate-x-1/2 origin-bottom -rotate-45"></div>
+                  <div className="absolute top-2 left-1/2 w-0.5 h-8 bg-gray-300 -translate-x-1/2 origin-bottom rotate-90"></div>
+                  <div className="absolute top-2 left-1/2 w-0.5 h-8 bg-gray-300 -translate-x-1/2 origin-bottom -rotate-90"></div>
                 </div>
               </div>
               {/* Calendar Icon with checkmark */}
-              <div className="relative z-10 w-24 h-24 mx-auto bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                <svg className="w-14 h-14 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="relative z-10 w-20 h-20 mx-auto bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                <svg className="w-12 h-12 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="2"/>
                   <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" strokeLinecap="round"/>
                   <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" strokeLinecap="round"/>
@@ -811,14 +812,14 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
               </div>
             </div>
             
-            <h2 className="text-2xl font-bold text-emerald-600 mb-6">Slot successfully booked !</h2>
+            <h2 className="text-xl font-bold text-emerald-600 mb-4">Slot successfully booked !</h2>
             
             {lastBookingDetails && (
-              <div className="bg-white border-2 border-gray-200 rounded-xl p-6 text-left">
-                <h3 className="text-lg font-semibold text-emerald-600 mb-6 text-center">Booking details</h3>
+              <div className="bg-white border-2 border-gray-200 rounded-xl p-4 text-left">
+                <h3 className="text-base font-semibold text-emerald-600 mb-4 text-center">Booking details</h3>
                 
                 {/* Two column layout for date/time and name/phone */}
-                <div className="grid grid-cols-2 gap-6 mb-6 pb-6 border-b border-gray-200">
+                <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-200">
                   <div>
                     <div className="font-semibold text-gray-900 mb-1">
                       {format(new Date(lastBookingDetails.startTime), 'dd MMM., yyyy')} | {(() => {
@@ -844,7 +845,7 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
                 </div>
                 
                 {/* Payment details */}
-                <div className="space-y-3 text-sm text-gray-600">
+                <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex justify-between">
                     <span>Booking Hours</span>
                     <span className="font-medium text-gray-900">{lastBookingDetails.totalHours} hrs</span>
@@ -861,7 +862,7 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
                     <span>Discount</span>
                     <span className="font-medium text-gray-900">Rs. {lastBookingDetails.discount || 0}</span>
                   </div>
-                  <div className="flex justify-between pt-3 border-t border-gray-200 text-base font-bold text-gray-900">
+                  <div className="flex justify-between pt-2 border-t border-gray-200 text-base font-bold text-gray-900">
                     <span>Total Amount</span>
                     <span>Rs. {lastBookingDetails.charge}</span>
                   </div>
@@ -870,7 +871,7 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
                 <Button
                   onClick={() => setShowSuccessDialog(false)}
                   variant="outline"
-                  className="w-full mt-6 py-6 text-base font-semibold"
+                  className="w-full mt-4 py-4 text-sm font-semibold"
                 >
                   Edit Booking
                 </Button>
@@ -878,24 +879,24 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
             )}
 
             {/* Share Booking Details */}
-            <div className="mt-6">
-              <h4 className="text-base font-semibold text-gray-900 mb-4">Share Booking Details</h4>
-              <div className="flex justify-center gap-6">
+            <div className="mt-4">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3">Share Booking Details</h4>
+              <div className="flex justify-center gap-4">
                 <button
                   onClick={() => {
                     sendWhatsAppMessage(lastBookingDetails);
                   }}
-                  className="flex flex-col items-center gap-2"
+                  className="flex flex-col items-center gap-1"
                 >
-                  <div className="w-14 h-14 bg-green-500 rounded-lg flex items-center justify-center">
-                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                    <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
                     </svg>
                   </div>
                 </button>
-                <button className="flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 bg-gray-100 border-2 border-gray-300 rounded-lg flex items-center justify-center">
-                    <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button className="flex flex-col items-center gap-1">
+                  <div className="w-12 h-12 bg-gray-100 border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                    <svg className="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <rect x="3" y="3" width="7" height="7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       <rect x="14" y="3" width="7" height="7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       <rect x="14" y="14" width="7" height="7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -903,9 +904,9 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
                     </svg>
                   </div>
                 </button>
-                <button className="flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 bg-gray-100 border-2 border-gray-300 rounded-lg flex items-center justify-center">
-                    <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button className="flex flex-col items-center gap-1">
+                  <div className="w-12 h-12 bg-gray-100 border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                    <svg className="w-7 h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <circle cx="18" cy="5" r="3" strokeWidth="2"/>
                       <circle cx="6" cy="12" r="3" strokeWidth="2"/>
                       <circle cx="18" cy="19" r="3" strokeWidth="2"/>
@@ -920,10 +921,11 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
             <Button
               onClick={() => setShowSuccessDialog(false)}
               variant="outline"
-              className="w-full mt-6 py-6 text-base font-semibold"
+              className="w-full mt-4 py-4 text-sm font-semibold"
             >
               Go to dashboard
             </Button>
+          </div>
           </div>
         </DialogContent>
       </Dialog>
