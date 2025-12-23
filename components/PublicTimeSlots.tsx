@@ -52,21 +52,19 @@ export default function PublicTimeSlots() {
     const slots: TimeSlot[] = [];
     const dayStart = startOfDay(date);
     
-    // Generate slots with odd hours (1-3, 3-5, 5-7, etc.)
-    for (let hour = 1; hour < 24; hour += 2) {
+    // Generate 1-hour slots (0-1, 1-2, 2-3, ... 23-24)
+    for (let hour = 0; hour < 24; hour++) {
       const slotStart = new Date(dayStart);
       slotStart.setHours(hour, 0, 0, 0);
-      const slotEnd = addHours(slotStart, 2);
+      const slotEnd = addHours(slotStart, 1);
 
       // Check if this slot has a booking
       const booking = bookings.find((b) => {
         const bookingStart = new Date(b.startTime);
-        const bookingEnd = new Date(b.endTime);
         return (
           isSameDay(bookingStart, date) &&
-          b.status !== 'CANCELLED' &&
-          ((isAfter(bookingStart, slotStart) || bookingStart.getTime() === slotStart.getTime()) &&
-            (isBefore(bookingEnd, slotEnd) || bookingEnd.getTime() === slotEnd.getTime()))
+          bookingStart.getHours() === hour &&
+          b.status !== 'CANCELLED'
         );
       });
 
@@ -83,8 +81,8 @@ export default function PublicTimeSlots() {
   };
 
   const generateTimeSlots = () => {
-    const today = generateTimeSlotsForDay(selectedDate, 'Today');
-    const tomorrow = generateTimeSlotsForDay(addDays(selectedDate, 1), 'Tomorrow');
+    const today = generateTimeSlotsForDay(selectedDate, format(selectedDate, 'MMM dd'));
+    const tomorrow = generateTimeSlotsForDay(addDays(selectedDate, 1), format(addDays(selectedDate, 1), 'MMM dd'));
     setTodaySlots(today);
     setTomorrowSlots(tomorrow);
   };

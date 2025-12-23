@@ -63,10 +63,10 @@ export default function HomePage() {
             All days of the week including holidays
           </p>
           <p className="text-emerald-600 font-medium mt-3">
-            • 2-hour slots available round the clock
+            • 1-hour slots available round the clock
           </p>
           <p className="text-emerald-600 font-medium">
-            • 12 slots per day for maximum flexibility
+            • 24 slots per day for maximum flexibility
           </p>
         </div>
       </main>
