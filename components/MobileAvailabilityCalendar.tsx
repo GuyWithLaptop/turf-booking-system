@@ -29,6 +29,7 @@ export default function MobileAvailabilityCalendar() {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringDays, setRecurringDays] = useState<number[]>([]);
   const [recurringEndDate, setRecurringEndDate] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [selectedSport, setSelectedSport] = useState('Football');
   const [availableSports, setAvailableSports] = useState<string[]>(['Football', 'Cricket', 'Other']);
@@ -202,43 +203,54 @@ export default function MobileAvailabilityCalendar() {
   };
 
   const handleBooking = async () => {
+    if (isSubmitting) {
+      return; // Prevent duplicate submissions
+    }
+
     if (selectedSlots.length === 0 || !formData.customerName || !formData.customerPhone || !formData.price) {
       alert('Please fill all required fields and select at least one slot');
       return;
     }
 
+    setIsSubmitting(true);
     try {
       // Handle recurring booking
-      if (isRecurring && selectedSlots.length === 1) {
+      if (isRecurring) {
         if (recurringDays.length === 0 || !recurringEndDate) {
           alert('Please select recurring days and end date');
           return;
         }
 
-        const response = await fetch('/api/bookings/recurring', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            customerName: formData.customerName,
-            customerPhone: formData.customerPhone,
-            startTime: selectedSlots[0].startTime.toISOString(),
-            endTime: selectedSlots[0].endTime.toISOString(),
-            recurringDays: recurringDays,
-            recurringEndDate: new Date(recurringEndDate).toISOString(),
-            charge: parseInt(formData.price) - parseInt(formData.discount || '0'),
-            notes: `Sport: ${selectedSport} | Advance: ${formData.advance}${formData.notes ? ' | ' + formData.notes : ''}`,
-          }),
-        });
+        // For each selected slot, create a recurring series
+        let totalBookings = 0;
+        for (const slot of selectedSlots) {
+          const response = await fetch('/api/bookings/recurring', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customerName: formData.customerName,
+              customerPhone: formData.customerPhone,
+              startTime: slot.startTime.toISOString(),
+              endTime: slot.endTime.toISOString(),
+              recurringDays: recurringDays,
+              recurringEndDate: new Date(recurringEndDate).toISOString(),
+              charge: parseInt(formData.price) - parseInt(formData.discount || '0'),
+              notes: `Sport: ${selectedSport} | Advance: ${formData.advance}${formData.notes ? ' | ' + formData.notes : ''}`,
+            }),
+          });
 
-        if (response.ok) {
-          const result = await response.json();
-          alert(`Successfully created ${result.bookings} recurring bookings!`);
-          resetForm();
-          fetchBookings();
-        } else {
-          const error = await response.json();
-          alert(error.error || 'Failed to create recurring bookings');
+          if (response.ok) {
+            const result = await response.json();
+            totalBookings += result.bookings;
+          } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to create recurring bookings');
+          }
         }
+        
+        alert(`Successfully created ${totalBookings} recurring bookings across ${selectedSlots.length} time slot(s)!`);
+        resetForm();
+        fetchBookings();
       } else {
         // Handle multi-slot or single booking
         for (const slot of selectedSlots) {
@@ -269,6 +281,8 @@ export default function MobileAvailabilityCalendar() {
     } catch (error: any) {
       console.error('Booking error:', error);
       alert(`Failed to create booking: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -637,77 +651,67 @@ export default function MobileAvailabilityCalendar() {
                 </div>
               </div>
 
-              {/* Recurring Booking Option - Only for single slot */}
-              {selectedSlots.length === 1 && (
-                <div className="border-t pt-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Checkbox
-                      id="recurring"
-                      checked={isRecurring}
-                      onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
-                    />
-                    <Label htmlFor="recurring" className="text-sm font-medium cursor-pointer">
-                      Make this a recurring booking
-                    </Label>
-                  </div>
+              {/* Recurring Booking Option */}
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Checkbox
+                    id="recurring"
+                    checked={isRecurring}
+                    onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
+                  />
+                  <Label htmlFor="recurring" className="text-sm font-medium cursor-pointer">
+                    Make this a recurring booking
+                  </Label>
+                </div>
 
-                  {isRecurring && (
-                    <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-                      <div>
-                        <Label className="text-sm font-medium mb-2 block">Select Days</Label>
-                        <div className="grid grid-cols-7 gap-2">
-                          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => toggleRecurringDay(idx)}
-                              className={`aspect-square rounded-lg text-sm font-medium transition-all ${
-                                recurringDays.includes(idx)
-                                  ? 'bg-emerald-500 text-white shadow-lg'
-                                  : 'bg-white border border-gray-300 text-gray-700 hover:border-emerald-500'
-                              }`}
-                            >
-                              {day}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="recurringEndDate" className="text-sm font-medium mb-2 block">
-                          Repeat Until
-                        </Label>
-                        <Input
-                          id="recurringEndDate"
-                          type="date"
-                          value={recurringEndDate}
-                          onChange={(e) => setRecurringEndDate(e.target.value)}
-                          min={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                        <p className="font-semibold mb-1">ℹ️ Recurring Booking Info:</p>
-                        <p className="text-xs">
-                          This will create bookings for all selected days from now until the end date.
-                        </p>
+                {isRecurring && (
+                  <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Select Days</Label>
+                      <div className="grid grid-cols-7 gap-2">
+                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => toggleRecurringDay(idx)}
+                            className={`aspect-square rounded-lg text-sm font-medium transition-all ${
+                              recurringDays.includes(idx)
+                                ? 'bg-emerald-500 text-white shadow-lg'
+                                : 'bg-white border border-gray-300 text-gray-700 hover:border-emerald-500'
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        ))}
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
 
-              {/* Info message for multi-slot bookings */}
-              {selectedSlots.length > 1 && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                  <p className="font-semibold mb-1">ℹ️ Multiple Slots Selected:</p>
-                  <p className="text-xs">
-                    A separate booking will be created for each selected time slot ({selectedSlots.length} slots).
-                    Recurring booking is not available for multiple slots.
-                  </p>
-                </div>
-              )}
+                    <div>
+                      <Label htmlFor="recurringEndDate" className="text-sm font-medium mb-2 block">
+                        Repeat Until
+                      </Label>
+                      <Input
+                        id="recurringEndDate"
+                        type="date"
+                        value={recurringEndDate}
+                        onChange={(e) => setRecurringEndDate(e.target.value)}
+                        min={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                      <p className="font-semibold mb-1">ℹ️ Recurring Booking Info:</p>
+                      <p className="text-xs">
+                        {selectedSlots.length === 1 
+                          ? 'This will create bookings for all selected days from now until the end date.'
+                          : `This will create recurring bookings for all ${selectedSlots.length} selected time slots on the selected days until the end date.`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Booking Summary */}
@@ -777,9 +781,10 @@ export default function MobileAvailabilityCalendar() {
 
             <Button
               onClick={handleBooking}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg font-semibold"
+              disabled={isSubmitting}
+              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Confirm Booking
+              {isSubmitting ? 'Processing...' : 'Confirm Booking'}
             </Button>
           </div>
         </DialogContent>

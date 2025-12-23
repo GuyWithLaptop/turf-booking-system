@@ -8,7 +8,6 @@ import BookingsList from '@/components/BookingsList';
 import Dashboard from '@/components/Dashboard';
 import Analytics from '@/components/Analytics';
 import ExpensesManagement from '@/components/ExpensesManagement';
-import RecurringBookingsView from '@/components/RecurringBookingsView';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import MobileDashboard from '@/components/MobileDashboard';
 import MobileAvailabilityCalendar from '@/components/MobileAvailabilityCalendar';
@@ -16,16 +15,19 @@ import MobileBookingsList from '@/components/MobileBookingsList';
 import MobileRevenue from '@/components/MobileRevenue';
 import MobileSettings from '@/components/MobileSettings';
 import { Button } from '@/components/ui/button';
-import { LogOut, Calendar, List, LayoutDashboard, BarChart3, Receipt, Repeat } from 'lucide-react';
+import { LogOut, Calendar, List, LayoutDashboard, BarChart3, Receipt } from 'lucide-react';
 
 function AdminContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const viewParam = searchParams.get('view');
-  const [view, setView] = useState<'dashboard' | 'slots' | 'list' | 'analytics' | 'expenses' | 'recurring' | 'revenue' | 'settings'>(
+  const [view, setView] = useState<'dashboard' | 'slots' | 'list' | 'analytics' | 'expenses' | 'revenue' | 'settings'>(
     (viewParam as any) || 'dashboard'
   );
+
+  const isSubAdmin = session?.user?.role === 'SUBADMIN';
+  const isOwner = session?.user?.role === 'OWNER';
 
   useEffect(() => {
     if (viewParam) {
@@ -98,33 +100,28 @@ function AdminContent() {
                   <List className="w-4 h-4" />
                   List
                 </Button>
-                <Button
-                  variant={view === 'analytics' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setView('analytics')}
-                  className="gap-2"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  Analytics
-                </Button>
-                <Button
-                  variant={view === 'expenses' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setView('expenses')}
-                  className="gap-2"
-                >
-                  <Receipt className="w-4 h-4" />
-                  Expenses
-                </Button>
-                <Button
-                  variant={view === 'recurring' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setView('recurring')}
-                  className="gap-2"
-                >
-                  <Repeat className="w-4 h-4" />
-                  Recurring
-                </Button>
+                {!isSubAdmin && (
+                  <>
+                    <Button
+                      variant={view === 'analytics' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setView('analytics')}
+                      className="gap-2"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      Analytics
+                    </Button>
+                    <Button
+                      variant={view === 'expenses' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setView('expenses')}
+                      className="gap-2"
+                    >
+                      <Receipt className="w-4 h-4" />
+                      Expenses
+                    </Button>
+                  </>
+                )}
               </div>
               <Button
                 variant="outline"
@@ -143,7 +140,15 @@ function AdminContent() {
         {/* Desktop Content */}
         <div className="hidden lg:block">
           {view === 'dashboard' ? (
-            <Dashboard />
+            isSubAdmin ? (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Sub-Admin Dashboard</h2>
+                <p className="text-gray-600 mb-4">You have access to booking management only.</p>
+                <TimeSlotBooking />
+              </div>
+            ) : (
+              <Dashboard />
+            )
           ) : view === 'slots' ? (
             <div className="bg-white rounded-xl shadow-lg p-6">
               <TimeSlotBooking />
@@ -160,40 +165,47 @@ function AdminContent() {
               </div>
               <BookingsList />
             </div>
-          ) : view === 'recurring' ? (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <RecurringBookingsView />
-            </div>
-          ) : view === 'analytics' ? (
+          ) : view === 'analytics' && !isSubAdmin ? (
             <Analytics />
-          ) : (
+          ) : !isSubAdmin ? (
             <ExpensesManagement />
+          ) : (
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <p className="text-gray-600">Access restricted</p>
+            </div>
           )}
         </div>
 
         {/* Mobile Content */}
         <div className="lg:hidden">
           {view === 'dashboard' ? (
-            <MobileDashboard />
+            isSubAdmin ? (
+              <div className="pb-24 px-4 pt-6">
+                <h2 className="text-xl font-bold text-gray-800 mb-4">Sub-Admin Dashboard</h2>
+                <p className="text-gray-600 mb-4">Use the bottom navigation to manage bookings.</p>
+              </div>
+            ) : (
+              <MobileDashboard />
+            )
           ) : view === 'slots' ? (
             <MobileAvailabilityCalendar />
           ) : view === 'list' ? (
             <MobileBookingsList />
-          ) : view === 'revenue' ? (
+          ) : view === 'revenue' && !isSubAdmin ? (
             <MobileRevenue />
-          ) : view === 'settings' ? (
+          ) : view === 'settings' && !isSubAdmin ? (
             <MobileSettings />
-          ) : view === 'recurring' ? (
-            <div className="pb-24 px-4 pt-6">
-              <RecurringBookingsView />
-            </div>
-          ) : view === 'analytics' ? (
+          ) : view === 'analytics' && !isSubAdmin ? (
             <div className="pb-24 px-4 pt-6">
               <Analytics />
             </div>
-          ) : (
+          ) : !isSubAdmin ? (
             <div className="pb-24 px-4 pt-6">
               <ExpensesManagement />
+            </div>
+          ) : (
+            <div className="pb-24 px-4 pt-6">
+              <p className="text-gray-600">Access restricted</p>
             </div>
           )}
         </div>
