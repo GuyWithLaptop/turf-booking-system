@@ -109,6 +109,24 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
     }
   };
 
+  const parseTimeSlot = (dateStr: string, timeStr: string): Date => {
+    // Parse time string like "09:00 AM" or "02:00 PM"
+    const [time, period] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    
+    // Convert to 24-hour format
+    if (period === 'PM' && hours !== 12) {
+      hours += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hours = 0;
+    }
+    
+    // Create date object
+    const date = new Date(dateStr);
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+  };
+
   const handleCheckAvailability = async () => {
     if (!startDate || !endDate || selectedDays.length === 0 || selectedTimeSlots.length === 0) {
       alert('Please fill all required fields: date range, days, and time slots');
@@ -129,14 +147,23 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
         // Parse time slot "HH:MM AM/PM - HH:MM AM/PM"
         const [startTimeStr, endTimeStr] = timeSlot.split(' - ');
         
+        // Convert to ISO datetime strings
+        const startDateTime = parseTimeSlot(startDate, startTimeStr);
+        const endDateTime = parseTimeSlot(startDate, endTimeStr);
+        
+        // If end time is before start time, it's next day
+        if (endDateTime <= startDateTime) {
+          endDateTime.setDate(endDateTime.getDate() + 1);
+        }
+        
         const response = await fetch('/api/bookings/recurring', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             customerName,
             customerPhone,
-            startTime: `${startDate} ${startTimeStr}`,
-            endTime: `${startDate} ${endTimeStr}`,
+            startTime: startDateTime.toISOString(),
+            endTime: endDateTime.toISOString(),
             recurringDays: selectedDays,
             recurringEndDate: new Date(endDate).toISOString(),
             charge: 500, // Default price, can be customized
