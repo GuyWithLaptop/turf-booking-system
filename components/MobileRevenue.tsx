@@ -34,6 +34,8 @@ type DailyRevenue = {
   advance: number;
   paid: number;
   total: number;
+  expenses: number;
+  net: number;
 };
 
 export default function MobileRevenue() {
@@ -146,7 +148,7 @@ export default function MobileRevenue() {
     return bookingDate >= sevenDaysAgo && b.status !== 'CANCELLED';
   });
 
-  // Group by date
+  // Group bookings by date
   const bookingsByDate = recentBookings.reduce((acc, booking) => {
     const dateKey = format(new Date(booking.startTime), 'dd/MM');
     if (!acc[dateKey]) {
@@ -156,7 +158,35 @@ export default function MobileRevenue() {
     return acc;
   }, {} as Record<string, Booking[]>);
 
-  Object.entries(bookingsByDate).forEach(([date, dayBookings]) => {
+  // Group expenses by date
+  const recentExpenses = Array.isArray(expenses) ? expenses.filter((e) => {
+    const expenseDate = new Date(e.date);
+    return expenseDate >= sevenDaysAgo;
+  }) : [];
+
+  const expensesByDate = recentExpenses.reduce((acc, expense) => {
+    const dateKey = format(new Date(expense.date), 'dd/MM');
+    if (!acc[dateKey]) {
+      acc[dateKey] = 0;
+    }
+    acc[dateKey] += expense.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Get all unique dates from both bookings and expenses
+  const allDates = new Set([...Object.keys(bookingsByDate), ...Object.keys(expensesByDate)]);
+
+  // Create revenue entries for each date
+  Array.from(allDates).sort((a, b) => {
+    // Convert dd/MM to comparable format
+    const [dayA, monthA] = a.split('/').map(Number);
+    const [dayB, monthB] = b.split('/').map(Number);
+    if (monthA !== monthB) return monthA - monthB;
+    return dayA - dayB;
+  }).forEach((date) => {
+    const dayBookings = bookingsByDate[date] || [];
+    const dayExpenses = expensesByDate[date] || 0;
+
     const advance = dayBookings.reduce((sum, b) => {
       const advanceMatch = b.notes?.match(/Advance: (\d+)/);
       return sum + (advanceMatch ? parseInt(advanceMatch[1]) : 0);
@@ -164,29 +194,22 @@ export default function MobileRevenue() {
     
     const total = dayBookings.reduce((sum, b) => sum + b.charge, 0);
     const paid = total - advance;
+    const net = total - dayExpenses;
 
     last7DaysRevenue.push({
       date,
       advance,
       paid,
       total,
+      expenses: dayExpenses,
+      net,
     });
   });
 
   const grandTotal = last7DaysRevenue.reduce((sum, day) => sum + day.total, 0);
   const totalAdvance = last7DaysRevenue.reduce((sum, day) => sum + day.advance, 0);
   const totalPaid = last7DaysRevenue.reduce((sum, day) => sum + day.paid, 0);
-
-  // Calculate total expenses for last 7 days
-  const sevenDaysAgoDate = new Date();
-  sevenDaysAgoDate.setDate(sevenDaysAgoDate.getDate() - 7);
-  
-  const recentExpenses = Array.isArray(expenses) ? expenses.filter((e) => {
-    const expenseDate = new Date(e.date);
-    return expenseDate >= sevenDaysAgoDate;
-  }) : [];
-  
-  const totalExpenses = recentExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = last7DaysRevenue.reduce((sum, day) => sum + day.expenses, 0);
   const netProfit = grandTotal - totalExpenses;
 
   if (loading) {
@@ -223,11 +246,12 @@ export default function MobileRevenue() {
 
         <Card className="bg-white overflow-hidden">
           {/* Table Header */}
-          <div className="grid grid-cols-4 bg-gray-50 border-b">
+          <div className="grid grid-cols-5 bg-gray-50 border-b">
             <div className="p-3 text-sm font-semibold text-emerald-700">Date</div>
             <div className="p-3 text-sm font-semibold text-emerald-700 text-right">Adv. ₹</div>
             <div className="p-3 text-sm font-semibold text-emerald-700 text-right">Paid ₹</div>
-            <div className="p-3 text-sm font-semibold text-emerald-700 text-right">Total ₹</div>
+            <div className="p-3 text-sm font-semibold text-red-700 text-right">Exp. ₹</div>
+            <div className="p-3 text-sm font-semibold text-emerald-700 text-right">Net ₹</div>
           </div>
 
           {/* Table Rows */}
@@ -239,23 +263,31 @@ export default function MobileRevenue() {
             last7DaysRevenue.map((day, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-4 border-b last:border-b-0 hover:bg-gray-50"
+                className="grid grid-cols-5 border-b last:border-b-0 hover:bg-gray-50"
               >
                 <div className="p-3 text-sm font-medium text-gray-900">{day.date}</div>
                 <div className="p-3 text-sm text-gray-700 text-right">{day.advance.toFixed(1)}</div>
                 <div className="p-3 text-sm text-gray-700 text-right">{day.paid.toFixed(1)}</div>
-                <div className="p-3 text-sm font-semibold text-gray-900 text-right">{day.total.toFixed(1)}</div>
+                <div className="p-3 text-sm font-semibold text-red-600 text-right">
+                  {day.expenses > 0 ? `-${day.expenses.toFixed(1)}` : '0.0'}
+                </div>
+                <div className={`p-3 text-sm font-semibold text-right ${day.net >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                  {day.net.toFixed(1)}
+                </div>
               </div>
             ))
           )}
 
           {/* Total Row */}
           {last7DaysRevenue.length > 0 && (
-            <div className="grid grid-cols-4 bg-emerald-50 border-t-2 border-emerald-200">
+            <div className="grid grid-cols-5 bg-emerald-50 border-t-2 border-emerald-200">
               <div className="p-3 text-sm font-bold text-emerald-800">{last7DaysRevenue.length}</div>
               <div className="p-3 text-sm font-bold text-emerald-800 text-right">{totalAdvance} ₹</div>
               <div className="p-3 text-sm font-bold text-emerald-800 text-right">{totalPaid} ₹</div>
-              <div className="p-3 text-sm font-bold text-emerald-800 text-right">{grandTotal} ₹</div>
+              <div className="p-3 text-sm font-bold text-red-700 text-right">-{totalExpenses} ₹</div>
+              <div className={`p-3 text-sm font-bold text-right ${netProfit >= 0 ? 'text-emerald-800' : 'text-red-700'}`}>
+                {netProfit} ₹
+              </div>
             </div>
           )}
         </Card>
