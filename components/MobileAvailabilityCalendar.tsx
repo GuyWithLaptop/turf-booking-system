@@ -154,13 +154,21 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
   const generateTimeSlots = () => {
     try {
       const slots: TimeSlot[] = [];
+      const now = new Date();
       
       // Generate 1-hour slots for selected day (12:00 AM to 11:00 PM)
       const dayStart = startOfDay(selectedDate);
+      const isToday = isSameDay(selectedDate, now);
+      
       for (let hour = 0; hour < 24; hour++) {
         const slotStart = new Date(dayStart);
         slotStart.setHours(hour, 0, 0, 0);
         const slotEnd = addHours(slotStart, 1);
+
+        // Skip past time slots for today
+        if (isToday && slotEnd <= now) {
+          continue;
+        }
 
         const booking = bookings.find((b) => {
           const bookingStart = new Date(b.startTime);
@@ -183,11 +191,17 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
       // Generate 1-hour slots for next day (12:00 AM to 11:00 PM)
       const nextDay = addDays(selectedDate, 1);
       const nextDayStart = startOfDay(nextDay);
+      const isNextDayToday = isSameDay(nextDay, now);
       
       for (let hour = 0; hour < 24; hour++) {
         const slotStart = new Date(nextDayStart);
         slotStart.setHours(hour, 0, 0, 0);
         const slotEnd = addHours(slotStart, 1);
+
+        // Skip past time slots if next day is today
+        if (isNextDayToday && slotEnd <= now) {
+          continue;
+        }
 
         const booking = bookings.find((b) => {
           const bookingStart = new Date(b.startTime);
