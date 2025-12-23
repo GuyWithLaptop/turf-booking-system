@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Bell, BellOff, Check, LogOut, Plus, X, Edit2, Save, Repeat, UserPlus, Shield } from 'lucide-react';
 import { requestNotificationPermission, subscribeToPushNotifications } from '@/lib/notifications';
 import RecurringBookingsView from '@/components/RecurringBookingsView';
+import GroupBooking from '@/components/GroupBooking';
 
 type SettingsTab = 'general' | 'turf' | 'recurring' | 'subadmins';
 
@@ -36,6 +37,9 @@ export default function MobileSettings() {
   const [newSubAdminPassword, setNewSubAdminPassword] = useState('');
   const [newSubAdminName, setNewSubAdminName] = useState('');
   const [addingSubAdmin, setAddingSubAdmin] = useState(false);
+
+  // Recurring booking state
+  const [showGroupBooking, setShowGroupBooking] = useState(false);
 
   const isOwner = session?.user?.role === 'OWNER';
 
@@ -639,9 +643,25 @@ export default function MobileSettings() {
 
       {/* Recurring Bookings Tab */}
       {activeTab === 'recurring' && (
-        <div className="bg-white rounded-lg p-3 sm:p-4 max-w-full overflow-hidden">
-          <RecurringBookingsView />
-        </div>
+        <>
+          {showGroupBooking ? (
+            <GroupBooking onBack={() => setShowGroupBooking(false)} />
+          ) : (
+            <div className="space-y-4">
+              <Button
+                onClick={() => setShowGroupBooking(true)}
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg font-semibold"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Create Group Booking
+              </Button>
+              
+              <div className="bg-white rounded-lg p-3 sm:p-4 max-w-full overflow-hidden">
+                <RecurringBookingsView />
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Sub-Admins Tab */}

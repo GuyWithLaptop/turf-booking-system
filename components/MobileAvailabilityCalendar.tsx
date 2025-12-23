@@ -716,7 +716,7 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
                     <div className="border-t pt-3 space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Booking hours</span>
-                        <span className="font-medium">2 hr</span>
+                        <span className="font-medium">1 hr</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Booking sub-total</span>
@@ -746,7 +746,7 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
                     <div className="border-t pt-3 space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Total hours</span>
-                        <span className="font-medium">{selectedSlots.length * 2} hr</span>
+                        <span className="font-medium">{selectedSlots.length} hr</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Total charge</span>

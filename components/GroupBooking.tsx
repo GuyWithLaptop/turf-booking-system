@@ -1,0 +1,284 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ChevronLeft, Calendar } from 'lucide-react';
+import { format, addDays } from 'date-fns';
+
+type GroupBookingProps = {
+  onBack: () => void;
+};
+
+export default function GroupBooking({ onBack }: GroupBookingProps) {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [selectedSport, setSelectedSport] = useState('Cricket');
+  const [showSlots, setShowSlots] = useState(false);
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState<string[]>([]);
+  const [availableSports, setAvailableSports] = useState<string[]>(['Cricket', 'Football', 'Basketball', 'Badminton']);
+
+  useEffect(() => {
+    fetchSports();
+  }, []);
+
+  const fetchSports = async () => {
+    // Check cache first
+    const cached = sessionStorage.getItem('availableSports');
+    if (cached) {
+      try {
+        const sports = JSON.parse(cached);
+        setAvailableSports(sports);
+        if (sports.length > 0) setSelectedSport(sports[0]);
+        return;
+      } catch (e) {
+        // Invalid cache
+      }
+    }
+
+    try {
+      const response = await fetch('/api/settings/sports');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.sports && data.sports.length > 0) {
+          setAvailableSports(data.sports);
+          setSelectedSport(data.sports[0]);
+          sessionStorage.setItem('availableSports', JSON.stringify(data.sports));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching sports:', error);
+    }
+  };
+
+  const days = [
+    { name: 'Monday', value: 1 },
+    { name: 'Tuesday', value: 2 },
+    { name: 'Wednesday', value: 3 },
+    { name: 'Thursday', value: 4 },
+    { name: 'Friday', value: 5 },
+    { name: 'Saturday', value: 6 },
+    { name: 'Sunday', value: 0 },
+  ];
+
+  const timeSlots = [
+    '12:00 AM - 01:00 AM',
+    '01:00 AM - 02:00 AM',
+    '02:00 AM - 03:00 AM',
+    '03:00 AM - 04:00 AM',
+    '04:00 AM - 05:00 AM',
+    '05:00 AM - 06:00 AM',
+    '06:00 AM - 07:00 AM',
+    '07:00 AM - 08:00 AM',
+    '08:00 AM - 09:00 AM',
+    '09:00 AM - 10:00 AM',
+    '10:00 AM - 11:00 AM',
+    '11:00 AM - 12:00 PM',
+    '12:00 PM - 01:00 PM',
+    '01:00 PM - 02:00 PM',
+    '02:00 PM - 03:00 PM',
+    '03:00 PM - 04:00 PM',
+    '04:00 PM - 05:00 PM',
+    '05:00 PM - 06:00 PM',
+    '06:00 PM - 07:00 PM',
+    '07:00 PM - 08:00 PM',
+    '08:00 PM - 09:00 PM',
+    '09:00 PM - 10:00 PM',
+    '10:00 PM - 11:00 PM',
+    '11:00 PM - 12:00 AM',
+  ];
+
+  const toggleDay = (dayValue: number) => {
+    if (selectedDays.includes(dayValue)) {
+      setSelectedDays(selectedDays.filter(d => d !== dayValue));
+    } else {
+      setSelectedDays([...selectedDays, dayValue]);
+    }
+  };
+
+  const toggleTimeSlot = (slot: string) => {
+    if (selectedTimeSlots.includes(slot)) {
+      setSelectedTimeSlots(selectedTimeSlots.filter(s => s !== slot));
+    } else {
+      setSelectedTimeSlots([...selectedTimeSlots, slot]);
+    }
+  };
+
+  const handleCheckAvailability = async () => {
+    if (!startDate || !endDate || selectedDays.length === 0) {
+      alert('Please select date range and at least one day');
+      return;
+    }
+    
+    // Here you would check availability with the API
+    // For now, just show the slots selector
+    setShowSlots(false);
+    alert('This feature will check availability and create recurring bookings');
+  };
+
+  const getSportIcon = (sport: string) => {
+    const icons: { [key: string]: string } = {
+      'Cricket': '🏏',
+      'Football': '⚽',
+      'Basketball': '🏀',
+      'Badminton': '🏸',
+      'Tennis': '🎾',
+    };
+    return icons[sport] || '🏆';
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-24">
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="flex items-center gap-4 p-4">
+          <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-xl font-bold">Group Booking</h1>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-6">
+        {/* Date Range */}
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 mb-3">Date Range</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+              <div className="relative">
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  min={format(new Date(), 'yyyy-MM-dd')}
+                  className="w-full pl-3 pr-10 py-6 text-base"
+                />
+                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600 pointer-events-none" />
+              </div>
+            </div>
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+              <div className="relative">
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate || format(new Date(), 'yyyy-MM-dd')}
+                  className="w-full pl-3 pr-10 py-6 text-base"
+                />
+                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-600 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Select Days */}
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 mb-3">Select Days</h2>
+          <div className="flex flex-wrap gap-3">
+            {days.map((day) => (
+              <button
+                key={day.value}
+                onClick={() => toggleDay(day.value)}
+                className={`px-6 py-3 rounded-lg font-medium text-base transition-all ${
+                  selectedDays.includes(day.value)
+                    ? 'bg-emerald-500 text-white shadow-lg'
+                    : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-emerald-500'
+                }`}
+              >
+                {day.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Choose Sport */}
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 mb-3">Choose Sport</h2>
+          <div className="relative">
+            <select
+              value={selectedSport}
+              onChange={(e) => setSelectedSport(e.target.value)}
+              className="w-full p-4 pl-16 pr-10 border-2 border-gray-300 rounded-lg text-base font-medium appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            >
+              {availableSports.map((sport) => (
+                <option key={sport} value={sport}>
+                  {sport}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+            {/* Show selected sport icon */}
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl pointer-events-none">
+              {getSportIcon(selectedSport)}
+            </div>
+          </div>
+        </div>
+
+        {/* Select Time */}
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 mb-3">Select Time</h2>
+          
+          {!showSlots ? (
+            <Button
+              onClick={() => setShowSlots(true)}
+              variant="outline"
+              className="w-full py-8 text-lg font-semibold border-2 border-gray-300 hover:border-emerald-500 hover:bg-emerald-50"
+            >
+              Select Slots
+            </Button>
+          ) : (
+            <Card className="p-4 border-2 border-gray-300">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-base">Available Time Slots</h3>
+                <button
+                  onClick={() => setShowSlots(false)}
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+                {timeSlots.map((slot) => (
+                  <button
+                    key={slot}
+                    onClick={() => toggleTimeSlot(slot)}
+                    className={`p-3 rounded-lg text-sm font-medium transition-all ${
+                      selectedTimeSlots.includes(slot)
+                        ? 'bg-emerald-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+              {selectedTimeSlots.length > 0 && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900">
+                    {selectedTimeSlots.length} slot{selectedTimeSlots.length > 1 ? 's' : ''} selected
+                  </p>
+                </div>
+              )}
+            </Card>
+          )}
+        </div>
+
+        {/* Check Availability Button */}
+        <Button
+          onClick={handleCheckAvailability}
+          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-8 text-lg font-semibold shadow-lg"
+        >
+          Check Availability
+        </Button>
+      </div>
+    </div>
+  );
+}
