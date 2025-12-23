@@ -30,6 +30,7 @@ export default function MobileAvailabilityCalendar() {
   const [recurringDays, setRecurringDays] = useState<number[]>([]);
   const [recurringEndDate, setRecurringEndDate] = useState('');
 
+  const [selectedSport, setSelectedSport] = useState('Football');
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
@@ -38,6 +39,9 @@ export default function MobileAvailabilityCalendar() {
     discount: '0',
     notes: '',
   });
+
+  // Available sports - can be managed from admin settings
+  const availableSports = ['Football', 'Cricket', 'Other'];
 
   useEffect(() => {
     fetchBookings();
@@ -133,6 +137,15 @@ export default function MobileAvailabilityCalendar() {
 
   const handleDateSelect = (date: Date) => {
     try {
+      // Prevent selecting past dates
+      const today = startOfDay(new Date());
+      const selectedDay = startOfDay(date);
+      
+      if (selectedDay < today) {
+        alert('Cannot select past dates');
+        return;
+      }
+      
       setSelectedDate(date);
       setSelectedSlots([]);
       setShowSlots(true);
@@ -199,7 +212,7 @@ export default function MobileAvailabilityCalendar() {
             recurringDays: recurringDays,
             recurringEndDate: new Date(recurringEndDate).toISOString(),
             charge: parseInt(formData.price) - parseInt(formData.discount || '0'),
-            notes: formData.notes || `Advance: ${formData.advance}`,
+            notes: `Sport: ${selectedSport} | Advance: ${formData.advance}${formData.notes ? ' | ' + formData.notes : ''}`,
           }),
         });
 
@@ -225,7 +238,7 @@ export default function MobileAvailabilityCalendar() {
               endTime: slot.endTime.toISOString(),
               charge: parseInt(formData.price) - parseInt(formData.discount || '0'),
               status: 'CONFIRMED',
-              notes: formData.notes || `Advance: ${formData.advance}`,
+              notes: `Sport: ${selectedSport} | Advance: ${formData.advance}${formData.notes ? ' | ' + formData.notes : ''}`,
             }),
           });
 
@@ -303,13 +316,17 @@ export default function MobileAvailabilityCalendar() {
           {monthDays.map((day, idx) => {
             const selected = isSameDay(day, selectedDate);
             const today = isToday(day);
+            const isPast = isBefore(day, startOfDay(new Date()));
             
             return (
               <button
                 key={idx}
                 onClick={() => handleDateSelect(day)}
+                disabled={isPast}
                 className={`aspect-square p-2 rounded-full text-center transition-all ${
-                  selected
+                  isPast
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : selected
                     ? 'bg-emerald-500 text-white font-bold shadow-lg'
                     : today
                     ? 'bg-emerald-100 text-emerald-700 font-semibold'
@@ -329,22 +346,48 @@ export default function MobileAvailabilityCalendar() {
 
       {/* Time Slots Modal */}
       <Dialog open={showSlots} onOpenChange={setShowSlots}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
           <DialogTitle className="sr-only">Available Time Slots</DialogTitle>
           <DialogDescription className="sr-only">Select time slots for booking</DialogDescription>
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
+          
+          {/* Fixed Header */}
+          <div className="p-6 pb-4 border-b bg-white">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-gray-900">Available slots</h3>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">{formData.customerName || 'ajshs'}</span>
-                <span className="text-xl">👨</span>
+                <select
+                  value={selectedSport}
+                  onChange={(e) => setSelectedSport(e.target.value)}
+                  className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {availableSports.map((sport) => (
+                    <option key={sport} value={sport}>
+                      {sport}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xl">⚽</span>
               </div>
             </div>
 
             {/* Selected slots indicator */}
             {selectedSlots.length > 0 && (
-              <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center justify-between">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center justify-between">
                 <span className="font-semibold text-emerald-700">
+                  {selectedSlots.length} Slot{selectedSlots.length > 1 ? 's' : ''} Selected
+                </span>
+                <button
+                  onClick={() => setSelectedSlots([])}
+                  className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Scrollable Slots Content */}
+          <div className="flex-1 overflow-y-auto p-6 pt-4">
                   {selectedSlots.length} Slot{selectedSlots.length > 1 ? 's' : ''} Selected
                 </span>
                 <button
@@ -463,9 +506,11 @@ export default function MobileAvailabilityCalendar() {
                 </>
               );
             })()}
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-6">
+          {/* Fixed Footer with Action Buttons */}
+          <div className="border-t bg-white p-6 pt-4">
+            <div className="flex gap-3">
               <Button
                 onClick={() => {
                   setShowSlots(false);
@@ -496,6 +541,23 @@ export default function MobileAvailabilityCalendar() {
           <div className="p-4">
 
             <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sport
+                </label>
+                <select
+                  value={selectedSport}
+                  onChange={(e) => setSelectedSport(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {availableSports.map((sport) => (
+                    <option key={sport} value={sport}>
+                      {sport}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Full Name
