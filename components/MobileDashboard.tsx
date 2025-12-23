@@ -60,6 +60,19 @@ export default function MobileDashboard() {
     fetchBookings();
   };
 
+  // Helper function to get display status
+  const getDisplayStatus = (booking: Booking) => {
+    const now = new Date();
+    const endTime = new Date(booking.endTime);
+    
+    // If booking time has passed, show as COMPLETED
+    if (endTime < now && booking.status !== 'CANCELLED') {
+      return 'COMPLETED';
+    }
+    
+    return booking.status;
+  };
+
   const todayBookings = bookings.filter((b) =>
     isToday(new Date(b.startTime)) && b.status !== 'CANCELLED'
   );
@@ -143,11 +156,12 @@ export default function MobileDashboard() {
                   <div className="text-right">
                     <div className="text-lg font-bold text-emerald-600">₹{booking.charge}</div>
                     <div className={`text-xs px-2 py-1 rounded-full mt-1 ${
-                      booking.status === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
-                      booking.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
+                      getDisplayStatus(booking) === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
+                      getDisplayStatus(booking) === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
+                      getDisplayStatus(booking) === 'PENDING' ? 'bg-amber-100 text-amber-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
-                      {booking.status}
+                      {getDisplayStatus(booking) === 'COMPLETED' ? 'PLAYED' : getDisplayStatus(booking)}
                     </div>
                   </div>
                 </div>

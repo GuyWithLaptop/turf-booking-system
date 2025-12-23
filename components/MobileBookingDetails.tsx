@@ -45,6 +45,21 @@ export default function MobileBookingDetails({
 
   if (!booking) return null;
 
+  // Helper function to get display status
+  const getDisplayStatus = () => {
+    const now = new Date();
+    const endTime = new Date(booking.endTime);
+    
+    // If booking time has passed, show as COMPLETED
+    if (endTime < now && booking.status !== 'CANCELLED') {
+      return 'COMPLETED';
+    }
+    
+    return booking.status;
+  };
+
+  const displayStatus = getDisplayStatus();
+
   const handleEdit = () => {
     setEditData({
       customerName: booking.customerName,
@@ -231,6 +246,15 @@ Total Amount: Rs. ${booking.charge}
                 <p className="text-gray-700 text-xl font-semibold mt-2">
                   {format(new Date(booking.startTime), 'h:mm a')} - {format(new Date(booking.endTime), 'h:mm a')}
                 </p>
+                <div className={`inline-block text-xs px-3 py-1 rounded-full mt-3 font-medium ${
+                  displayStatus === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
+                  displayStatus === 'CONFIRMED' ? 'bg-emerald-100 text-emerald-800' :
+                  displayStatus === 'PENDING' ? 'bg-amber-100 text-amber-800' :
+                  displayStatus === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {displayStatus === 'COMPLETED' ? 'PLAYED' : displayStatus}
+                </div>
               </div>
 
               {/* Customer Info */}

@@ -61,6 +61,19 @@ export default function MobileBookingsList() {
     fetchBookings();
   };
 
+  // Helper function to get display status
+  const getDisplayStatus = (booking: Booking) => {
+    const now = new Date();
+    const endTime = new Date(booking.endTime);
+    
+    // If booking time has passed, show as COMPLETED
+    if (endTime < now && booking.status !== 'CANCELLED') {
+      return 'COMPLETED';
+    }
+    
+    return booking.status;
+  };
+
   // Get last 7 days bookings
   const last7DaysBookings = bookings
     .filter((b) => {
