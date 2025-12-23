@@ -349,8 +349,73 @@ export default function MobileSettings() {
       {/* General Settings Tab */}
       {activeTab === 'general' && (
         <>
+          {/* Expense Manager */}
+          <div
+            onClick={() => window.location.href = '/admin/expenses'}
+            className="bg-white rounded-2xl p-4 mb-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 border border-gray-200 shadow-sm"
+          >
+            <div className="flex items-center gap-4">
+              <div className="bg-yellow-100 rounded-full p-3">
+                <span className="text-2xl">💰</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Expense Manager</h3>
+                <p className="text-gray-600 text-sm">Manage your expense</p>
+              </div>
+            </div>
+            <span className="text-gray-400 text-2xl">›</span>
+          </div>
+
+          {/* Add Group Booking */}
+          <div
+            onClick={() => setActiveTab('recurring')}
+            className="bg-white rounded-2xl p-4 mb-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 border border-gray-200 shadow-sm"
+          >
+            <div className="flex items-center gap-4">
+              <div className="bg-green-100 rounded-full p-3 flex items-center justify-center w-12 h-12">
+                <span className="text-green-600 font-bold text-lg">G</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Add Group Booking</h3>
+              </div>
+            </div>
+            <span className="text-gray-400 text-2xl">›</span>
+          </div>
+
+          {/* Add UPI ID */}
+          <div
+            className="bg-white rounded-2xl p-4 mb-4 flex items-center cursor-pointer hover:bg-gray-50 border border-gray-200 shadow-sm"
+          >
+            <div className="flex items-center gap-4">
+              <div className="bg-orange-100 rounded-full p-3">
+                <span className="text-2xl">⚡</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Add UPI ID</h3>
+              </div>
+            </div>
+          </div>
+
+          {/* Add Sub-admin */}
+          {isOwner && (
+            <div
+              onClick={() => setActiveTab('subadmins')}
+              className="bg-white rounded-2xl p-4 mb-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 border border-gray-200 shadow-sm"
+            >
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-100 rounded-full p-3">
+                  <UserPlus className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Add Sub-admin</h3>
+                </div>
+              </div>
+              <span className="text-gray-400 text-2xl">›</span>
+            </div>
+          )}
+
           {/* Install App */}
-          <Card className="p-6 bg-white mb-4">
+          <Card className="p-6 bg-white mb-4 mt-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Install App</h3>

@@ -38,9 +38,12 @@ export default function MobileBookingDetails({
     customerName: '',
     customerPhone: '',
     startTime: '',
-    charge: 0,
+    endTime: '',
+    pricePerHour: 0,
     advance: 0,
     discount: 0,
+    onlinePayment: 0,
+    cashPayment: 0,
   });
 
   if (!booking) return null;
@@ -61,26 +64,50 @@ export default function MobileBookingDetails({
   const displayStatus = getDisplayStatus();
 
   const handleEdit = () => {
+    // Parse notes for advance payment and discount
+    const advanceMatch = booking.notes?.match(/Advance:\s*(\d+)/);
+    const discountMatch = booking.notes?.match(/Discount:\s*(\d+)/);
+    const advance = advanceMatch ? parseInt(advanceMatch[1]) : 0;
+    const discount = discountMatch ? parseInt(discountMatch[1]) : 0;
+    
+    // Calculate price per hour
+    const hours = Math.abs(new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime()) / 36e5;
+    const pricePerHour = hours > 0 ? Math.round(booking.charge / hours) : 0;
+    
     setEditData({
       customerName: booking.customerName,
       customerPhone: booking.customerPhone,
       startTime: booking.startTime,
-      charge: booking.charge,
-      advance: 0,
-      discount: 0,
+      endTime: booking.endTime,
+      pricePerHour: pricePerHour,
+      advance: advance,
+      discount: discount,
+      onlinePayment: 0,
+      cashPayment: 0,
     });
     setIsEditing(true);
   };
 
   const handleSaveEdit = async () => {
     try {
+      // Calculate total charge based on hours and price per hour
+      const hours = Math.abs(new Date(editData.endTime).getTime() - new Date(editData.startTime).getTime()) / 36e5;
+      const totalCharge = Math.round(hours * editData.pricePerHour);
+      
+      // Build notes with payment details
+      const notes = `Advance: ${editData.advance}, Discount: ${editData.discount}, Online: ${editData.onlinePayment}, Cash: ${editData.cashPayment}`;
+      
       const response = await fetch(`/api/bookings/${booking.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerName: editData.customerName,
           customerPhone: editData.customerPhone,
-          charge: editData.charge,
+          startTime: editData.startTime,
+          endTime: editData.endTime,
+          charge: totalCharge,
+          notes: notes,
+          status: booking.status,
         }),
       });
 
@@ -90,7 +117,8 @@ export default function MobileBookingDetails({
         onUpdate?.();
         onClose();
       } else {
-        alert('Failed to update booking');
+        const error = await response.json();
+        alert(error.error || 'Failed to update booking');
       }
     } catch (error) {
       console.error('Error updating booking:', error);
@@ -167,51 +195,166 @@ Total Amount: Rs. ${booking.charge}
         </DialogDescription>
         {isEditing ? (
           // Edit Mode
-          <div className="p-6">
-            <div className="flex items-center gap-4 mb-6">
+          <div className="min-h-screen bg-gray-50">
+            {/* Header */}
+            <div className="bg-white p-4 sticky top-0 z-10 border-b flex items-center gap-4">
               <button onClick={() => setIsEditing(false)} className="p-2">
                 <ArrowLeft className="w-6 h-6" />
               </button>
-              <h2 className="text-xl font-bold">Edit Booking</h2>
+              <h2 className="text-xl font-bold">Update booking</h2>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-4 space-y-4">
+              {/* Full Name */}
               <div>
-                <Label>Customer Name</Label>
-                <Input
-                  value={editData.customerName}
-                  onChange={(e) => setEditData({ ...editData, customerName: e.target.value })}
-                  placeholder="Customer Name"
-                  className="mt-1"
-                />
+                <Label htmlFor="customerName" className="text-base font-semibold">Full Name</Label>
+                <div className="relative mt-2">
+                  <Input
+                    id="customerName"
+                    value={editData.customerName}
+                    onChange={(e) => setEditData({ ...editData, customerName: e.target.value })}
+                    placeholder="Enter full name"
+                    className="pr-10 py-6 text-base"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
+              {/* Mobile no. */}
               <div>
-                <Label>Phone Number</Label>
-                <Input
-                  value={editData.customerPhone}
-                  onChange={(e) => setEditData({ ...editData, customerPhone: e.target.value })}
-                  placeholder="Phone Number"
-                  className="mt-1"
-                />
+                <Label htmlFor="customerPhone" className="text-base font-semibold">Mobile no.</Label>
+                <div className="relative mt-2">
+                  <Input
+                    id="customerPhone"
+                    type="tel"
+                    value={editData.customerPhone}
+                    onChange={(e) => setEditData({ ...editData, customerPhone: e.target.value })}
+                    placeholder="Enter mobile number"
+                    className="pr-10 py-6 text-base"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <Phone className="w-6 h-6" />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <Label>Total Charge</Label>
-                <Input
-                  type="number"
-                  value={editData.charge}
-                  onChange={(e) => setEditData({ ...editData, charge: parseInt(e.target.value) })}
-                  placeholder="Total Charge"
-                  className="mt-1"
-                />
+              {/* Price per Hours and Advance payment */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="pricePerHour" className="text-base font-semibold">Price per Hours</Label>
+                  <div className="relative mt-2">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg">₹</span>
+                    <Input
+                      id="pricePerHour"
+                      type="number"
+                      value={editData.pricePerHour}
+                      onChange={(e) => setEditData({ ...editData, pricePerHour: parseInt(e.target.value) || 0 })}
+                      className="pl-8 py-6 text-base"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="advance" className="text-base font-semibold">Advance payment</Label>
+                  <div className="relative mt-2">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg">₹</span>
+                    <Input
+                      id="advance"
+                      type="number"
+                      value={editData.advance}
+                      onChange={(e) => setEditData({ ...editData, advance: parseInt(e.target.value) || 0 })}
+                      className="pl-8 py-6 text-base"
+                    />
+                  </div>
+                </div>
               </div>
 
+              {/* Discount price */}
+              <div>
+                <Label htmlFor="discount" className="text-base font-semibold">Discount price</Label>
+                <div className="relative mt-2">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg">₹</span>
+                  <Input
+                    id="discount"
+                    type="number"
+                    value={editData.discount}
+                    onChange={(e) => setEditData({ ...editData, discount: parseInt(e.target.value) || 0 })}
+                    className="pl-8 py-6 text-base"
+                  />
+                </div>
+              </div>
+
+              {/* Online Payment and Cash Payment */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="onlinePayment" className="text-base font-semibold">Online Payment</Label>
+                  <div className="relative mt-2">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg">₹</span>
+                    <Input
+                      id="onlinePayment"
+                      type="number"
+                      value={editData.onlinePayment}
+                      onChange={(e) => setEditData({ ...editData, onlinePayment: parseInt(e.target.value) || 0 })}
+                      className="pl-8 py-6 text-base"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="cashPayment" className="text-base font-semibold">Cash Payment</Label>
+                  <div className="relative mt-2">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg">₹</span>
+                    <Input
+                      id="cashPayment"
+                      type="number"
+                      value={editData.cashPayment}
+                      onChange={(e) => setEditData({ ...editData, cashPayment: parseInt(e.target.value) || 0 })}
+                      className="pl-8 py-6 text-base"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Booking Summary */}
+              <div className="bg-white rounded-xl p-6 mt-6 border-2 border-gray-200">
+                <h3 className="text-xl font-semibold text-emerald-600 text-center mb-4">
+                  Booking Summary
+                </h3>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-semibold text-gray-900">
+                        {format(new Date(editData.startTime), 'dd MMM yyyy')} | {editData.customerName || 'Name'}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {format(new Date(editData.startTime), 'h:mm a')} - {format(new Date(editData.endTime), 'h:mm a')}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold text-gray-900">{editData.customerName || 'shnssshhshhs'}</div>
+                      <div className="text-sm text-gray-600">+91 {editData.customerPhone}</div>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-3 text-sm text-gray-600">
+                    <div className="text-right">
+                      Booking hours: <span className="font-semibold text-gray-900">
+                        {Math.abs(new Date(editData.endTime).getTime() - new Date(editData.startTime).getTime()) / 36e5} hrs
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Update Booking Button */}
               <Button
                 onClick={handleSaveEdit}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6"
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg font-semibold mt-6"
               >
-                Save Changes
+                Update Booking
               </Button>
             </div>
           </div>

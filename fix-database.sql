@@ -53,7 +53,27 @@ BEGIN
     END IF;
 END $$;
 
--- 4. Insert default sports
+-- 4. Add payment tracking fields to bookings table
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'bookings' AND column_name = 'cashPayment') THEN
+        ALTER TABLE "bookings" ADD COLUMN "cashPayment" DOUBLE PRECISION NOT NULL DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'bookings' AND column_name = 'onlinePayment') THEN
+        ALTER TABLE "bookings" ADD COLUMN "onlinePayment" DOUBLE PRECISION NOT NULL DEFAULT 0;
+    END IF;
+END $$;
+
+-- 5. Add payment method field to expenses table
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'expenses' AND column_name = 'paymentMethod') THEN
+        ALTER TABLE "expenses" ADD COLUMN "paymentMethod" TEXT DEFAULT 'Cash';
+    END IF;
+END $$;
+
+-- 6. Insert default sports
 INSERT INTO "sports" ("name", "icon", "active", "sharesGround") VALUES
     ('Football', '⚽', true, true),
     ('Cricket', '🏏', true, true),
@@ -62,7 +82,7 @@ INSERT INTO "sports" ("name", "icon", "active", "sharesGround") VALUES
     ('Basketball', '🏀', true, false)
 ON CONFLICT ("name") DO NOTHING;
 
--- 5. Insert default settings
+-- 7. Insert default settings
 INSERT INTO "app_settings" ("id", "defaultPrice", "turfName", "turfAddress", "turfNotes", "turfPhone") VALUES
     (1, 500, 'FS Sports Club', 'FS Sports Club, Beside Nayara Petrol Pump, Malegaon', 'FS Sports Club offers a world-class cricket turf facility in Malegaon, operating 24/7 for your convenience. Experience professional-grade equipment and amenities.', '+91 7066990055')
 ON CONFLICT ("id") DO NOTHING;

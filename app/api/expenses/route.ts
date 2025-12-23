@@ -81,7 +81,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
 
-    const { title, description, amount, category, date } = body;
+    const { title, description, amount, category, date, paymentMethod } = body;
 
     // Input validation - title is now optional, but at least one of title or description is required
     const hasTitle = title && typeof title === 'string' && title.trim().length > 0;
@@ -100,6 +100,10 @@ export async function POST(request: Request) {
     if (!category || !validCategories.includes(category)) {
       return NextResponse.json({ error: 'Valid category is required' }, { status: 400 });
     }
+
+    // Validate payment method
+    const validPaymentMethods = ['Cash', 'Online', 'Card'];
+    const sanitizedPaymentMethod = paymentMethod && validPaymentMethods.includes(paymentMethod) ? paymentMethod : 'Cash';
 
     // Sanitize inputs
     const sanitizedTitle = hasTitle ? title.trim().slice(0, 255) : null;
@@ -157,6 +161,7 @@ export async function POST(request: Request) {
         description: sanitizedDescription,
         amount: sanitizedAmount,
         category,
+        paymentMethod: sanitizedPaymentMethod,
         date: expenseDate,
         createdById: userId,
       },
