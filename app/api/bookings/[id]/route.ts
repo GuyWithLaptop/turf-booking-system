@@ -4,11 +4,11 @@ import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
 const bookingSchema = z.object({
-  customerName: z.string().min(1, 'Customer name is required'),
-  customerPhone: z.string().min(1, 'Customer phone is required'),
-  startTime: z.string().datetime(),
-  endTime: z.string().datetime(),
-  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED']),
+  customerName: z.string().min(1, 'Customer name is required').optional(),
+  customerPhone: z.string().min(1, 'Customer phone is required').optional(),
+  startTime: z.string().datetime().optional(),
+  endTime: z.string().datetime().optional(),
+  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED']).optional(),
   notes: z.string().optional(),
 });
 
@@ -37,51 +37,59 @@ export async function PATCH(
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    // Check for overlapping bookings (excluding current booking)
-    const overlapping = await prisma.booking.findFirst({
-      where: {
-        AND: [
-          {
-            id: {
-              not: id,
-            },
-          },
-          {
-            startTime: {
-              lt: new Date(validatedData.endTime),
-            },
-          },
-          {
-            endTime: {
-              gt: new Date(validatedData.startTime),
-            },
-          },
-          {
-            status: {
-              notIn: ['CANCELLED'],
-            },
-          },
-        ],
-      },
-    });
+    // Only check for overlapping if time is being changed
+    if (validatedData.startTime || validatedData.endTime) {
+      const startTime = validatedData.startTime ? new Date(validatedData.startTime) : existingBooking.startTime;
+      const endTime = validatedData.endTime ? new Date(validatedData.endTime) : existingBooking.endTime;
 
-    if (overlapping) {
-      return NextResponse.json(
-        { error: 'Time slot is already booked' },
-        { status: 409 }
-      );
+      // Check for overlapping bookings (excluding current booking)
+      const overlapping = await prisma.booking.findFirst({
+        where: {
+          AND: [
+            {
+              id: {
+                not: id,
+              },
+            },
+            {
+              startTime: {
+                lt: endTime,
+              },
+            },
+            {
+              endTime: {
+                gt: startTime,
+              },
+            },
+            {
+              status: {
+                notIn: ['CANCELLED'],
+              },
+            },
+          ],
+        },
+      });
+
+      if (overlapping) {
+        return NextResponse.json(
+          { error: 'Time slot is already booked' },
+          { status: 409 }
+        );
+      }
     }
+
+    // Build update data object with only provided fields
+    const updateData: any = {};
+    if (validatedData.customerName !== undefined) updateData.customerName = validatedData.customerName;
+    if (validatedData.customerPhone !== undefined) updateData.customerPhone = validatedData.customerPhone;
+    if (validatedData.startTime !== undefined) updateData.startTime = new Date(validatedData.startTime);
+    if (validatedData.endTime !== undefined) updateData.endTime = new Date(validatedData.endTime);
+    if (validatedData.status !== undefined) updateData.status = validatedData.status;
+    if (validatedData.notes !== undefined) updateData.notes = validatedData.notes;
 
     const booking = await prisma.booking.update({
       where: { id },
-      data: {
-        customerName: validatedData.customerName,
-        customerPhone: validatedData.customerPhone,
-        startTime: new Date(validatedData.startTime),
-        endTime: new Date(validatedData.endTime),
-        status: validatedData.status,
-        notes: validatedData.notes,
-      },
+      data: updateData,
       include: {
         createdBy: {
           select: {
