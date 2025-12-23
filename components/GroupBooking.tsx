@@ -19,6 +19,9 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
   const [showSlots, setShowSlots] = useState(false);
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<string[]>([]);
   const [availableSports, setAvailableSports] = useState<string[]>(['Cricket', 'Football', 'Basketball', 'Badminton']);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchSports();
@@ -107,15 +110,66 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
   };
 
   const handleCheckAvailability = async () => {
-    if (!startDate || !endDate || selectedDays.length === 0) {
-      alert('Please select date range and at least one day');
+    if (!startDate || !endDate || selectedDays.length === 0 || selectedTimeSlots.length === 0) {
+      alert('Please fill all required fields: date range, days, and time slots');
       return;
     }
-    
-    // Here you would check availability with the API
-    // For now, just show the slots selector
-    setShowSlots(false);
-    alert('This feature will check availability and create recurring bookings');
+
+    if (!customerName || !customerPhone) {
+      alert('Please enter customer name and phone number');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      let totalBookings = 0;
+      
+      // Create recurring bookings for each selected time slot
+      for (const timeSlot of selectedTimeSlots) {
+        // Parse time slot "HH:MM AM/PM - HH:MM AM/PM"
+        const [startTimeStr, endTimeStr] = timeSlot.split(' - ');
+        
+        const response = await fetch('/api/bookings/recurring', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName,
+            customerPhone,
+            startTime: `${startDate} ${startTimeStr}`,
+            endTime: `${startDate} ${endTimeStr}`,
+            recurringDays: selectedDays,
+            recurringEndDate: new Date(endDate).toISOString(),
+            charge: 500, // Default price, can be customized
+            notes: `Sport: ${selectedSport} | Group Booking`,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          totalBookings += result.bookings || 0;
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to create recurring bookings');
+        }
+      }
+
+      alert(`✅ Successfully created ${totalBookings} recurring bookings!\n\nCustomer: ${customerName}\nSport: ${selectedSport}\nTime Slots: ${selectedTimeSlots.length}\nDays: ${selectedDays.length}`);
+      
+      // Reset form
+      setStartDate('');
+      setEndDate('');
+      setSelectedDays([]);
+      setSelectedTimeSlots([]);
+      setCustomerName('');
+      setCustomerPhone('');
+      setShowSlots(false);
+      
+    } catch (error: any) {
+      console.error('Error creating recurring bookings:', error);
+      alert(`Failed to create recurring bookings: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getSportIcon = (sport: string) => {
@@ -142,6 +196,33 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
       </div>
 
       <div className="p-4 space-y-6">
+        {/* Customer Details */}
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 mb-3">Customer Details</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+              <Input
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Enter customer name"
+                className="w-full p-4 text-base"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+              <Input
+                type="tel"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="Enter phone number"
+                className="w-full p-4 text-base"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Date Range */}
         <div>
           <h2 className="text-lg font-bold text-gray-900 mb-3">Date Range</h2>
@@ -271,12 +352,13 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
           )}
         </div>
 
-        {/* Check Availability Button */}
+        {/* Create Booking Button */}
         <Button
           onClick={handleCheckAvailability}
-          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-8 text-lg font-semibold shadow-lg"
+          disabled={isSubmitting || !customerName || !customerPhone || !startDate || !endDate || selectedDays.length === 0 || selectedTimeSlots.length === 0}
+          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-8 text-lg font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Check Availability
+          {isSubmitting ? 'Creating Bookings...' : `Create Group Booking (${selectedTimeSlots.length} slots × ${selectedDays.length} days)`}
         </Button>
       </div>
     </div>

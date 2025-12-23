@@ -115,6 +115,26 @@ export default function RecurringBookingsView() {
     }
   };
 
+  const handleCancelSingleBooking = async (bookingId: string, bookingDate: string) => {
+    if (!confirm(`Cancel booking for ${bookingDate}?`)) return;
+
+    try {
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'CANCELLED' }),
+      });
+
+      if (!response.ok) throw new Error('Failed to cancel booking');
+
+      alert('Booking cancelled successfully');
+      fetchRecurringBookings();
+    } catch (error) {
+      alert('Failed to cancel booking');
+      console.error(error);
+    }
+  };
+
   const getDayNames = (days: number[]) => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return days.map(d => dayNames[d]).join(', ');
@@ -265,24 +285,40 @@ export default function RecurringBookingsView() {
                     <div className="space-y-2">
                       {group.bookings
                         .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-                        .map((booking) => (
-                          <div
-                            key={booking.id}
-                            className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg text-xs sm:text-sm gap-2"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="font-medium truncate">
-                                {format(new Date(booking.startTime), 'EEE, MMM dd, yyyy')}
+                        .map((booking) => {
+                          const bookingDate = format(new Date(booking.startTime), 'EEE, MMM dd, yyyy');
+                          const isCancellable = booking.status !== 'CANCELLED' && new Date(booking.startTime) > new Date();
+                          
+                          return (
+                            <div
+                              key={booking.id}
+                              className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg text-xs sm:text-sm gap-2"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium truncate">
+                                  {bookingDate}
+                                </div>
+                                <div className="text-[10px] sm:text-xs text-gray-600">
+                                  {format(new Date(booking.startTime), 'h:mm a')} - {format(new Date(booking.endTime), 'h:mm a')}
+                                </div>
                               </div>
-                              <div className="text-[10px] sm:text-xs text-gray-600">
-                                {format(new Date(booking.startTime), 'h:mm a')} - {format(new Date(booking.endTime), 'h:mm a')}
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Badge className={`${getStatusBadge(booking.status)} text-[10px] sm:text-xs`}>
+                                  {booking.status}
+                                </Badge>
+                                {isCancellable && (
+                                  <button
+                                    onClick={() => handleCancelSingleBooking(booking.id, bookingDate)}
+                                    className="p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-700 transition-colors"
+                                    title="Cancel this booking"
+                                  >
+                                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  </button>
+                                )}
                               </div>
                             </div>
-                            <Badge className={`${getStatusBadge(booking.status)} text-[10px] sm:text-xs flex-shrink-0`}>
-                              {booking.status}
-                            </Badge>
-                          </div>
-                        ))}
+                          );
+                        })}
                     </div>
                   </div>
                 )}
