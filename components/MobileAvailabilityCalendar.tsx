@@ -402,17 +402,6 @@ export default function MobileAvailabilityCalendar() {
 
           {/* Scrollable Slots Content */}
           <div className="flex-1 overflow-y-auto p-6 pt-4">
-                  {selectedSlots.length} Slot{selectedSlots.length > 1 ? 's' : ''} Selected
-                </span>
-                <button
-                  onClick={() => setSelectedSlots([])}
-                  className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
-
             {/* Render slots grouped by date */}
             {(() => {
               const day1Slots = timeSlots.filter(slot => 
