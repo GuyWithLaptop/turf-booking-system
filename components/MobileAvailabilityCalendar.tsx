@@ -31,6 +31,7 @@ export default function MobileAvailabilityCalendar() {
   const [recurringEndDate, setRecurringEndDate] = useState('');
 
   const [selectedSport, setSelectedSport] = useState('Football');
+  const [availableSports, setAvailableSports] = useState<string[]>(['Football', 'Cricket', 'Other']);
   const [formData, setFormData] = useState({
     customerName: '',
     customerPhone: '',
@@ -40,11 +41,9 @@ export default function MobileAvailabilityCalendar() {
     notes: '',
   });
 
-  // Available sports - can be managed from admin settings
-  const availableSports = ['Football', 'Cricket', 'Other'];
-
   useEffect(() => {
     fetchBookings();
+    fetchSports();
   }, []);
 
   useEffect(() => {
@@ -52,6 +51,21 @@ export default function MobileAvailabilityCalendar() {
       generateTimeSlots();
     }
   }, [selectedDate, bookings]);
+
+  const fetchSports = async () => {
+    try {
+      const response = await fetch('/api/settings/sports');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.sports && data.sports.length > 0) {
+          setAvailableSports(data.sports);
+          setSelectedSport(data.sports[0]); // Set first sport as default
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching sports:', error);
+    }
+  };
 
   const fetchBookings = async () => {
     try {

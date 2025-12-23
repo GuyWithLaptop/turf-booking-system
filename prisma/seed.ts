@@ -67,6 +67,31 @@ async function main() {
   }
 
   console.log(`✅ Created ${sampleBookings.length} sample bookings`);
+
+  // Create default sports
+  const defaultSports = ['Football', 'Cricket', 'Badminton', 'Tennis', 'Basketball'];
+  
+  for (const sportName of defaultSports) {
+    await prisma.sport.upsert({
+      where: { name: sportName },
+      update: {},
+      create: { name: sportName },
+    });
+  }
+
+  console.log(`✅ Created ${defaultSports.length} default sports`);
+
+  // Create default app settings
+  await prisma.appSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      defaultPrice: 500,
+    },
+  });
+
+  console.log('✅ Created default app settings');
   console.log('✨ Seeding completed successfully!');
 }
 
