@@ -5,11 +5,12 @@ import { signOut, useSession } from 'next-auth/react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Bell, BellOff, Check, LogOut, Plus, X, Edit2, Save, Repeat, UserPlus, Shield } from 'lucide-react';
 import { requestNotificationPermission, subscribeToPushNotifications } from '@/lib/notifications';
 import RecurringBookingsView from '@/components/RecurringBookingsView';
 
-type SettingsTab = 'general' | 'recurring' | 'subadmins';
+type SettingsTab = 'general' | 'turf' | 'recurring' | 'subadmins';
 
 export default function MobileSettings() {
   const { data: session } = useSession();
@@ -21,6 +22,13 @@ export default function MobileSettings() {
   const [editingSports, setEditingSports] = useState(false);
   const [defaultPrice, setDefaultPrice] = useState('500');
   const [editingPrice, setEditingPrice] = useState(false);
+  
+  // Turf info state
+  const [turfName, setTurfName] = useState('FS Sports Club');
+  const [turfAddress, setTurfAddress] = useState('');
+  const [turfNotes, setTurfNotes] = useState('');
+  const [turfPhone, setTurfPhone] = useState('');
+  const [editingTurfInfo, setEditingTurfInfo] = useState(false);
   
   // Sub-admin management state
   const [subAdmins, setSubAdmins] = useState<any[]>([]);
@@ -75,6 +83,10 @@ export default function MobileSettings() {
         const settings = JSON.parse(cached);
         if (settings.defaultPrice) {
           setDefaultPrice(settings.defaultPrice.toString());
+          setTurfName(settings.turfName || 'FS Sports Club');
+          setTurfAddress(settings.turfAddress || '');
+          setTurfNotes(settings.turfNotes || '');
+          setTurfPhone(settings.turfPhone || '');
           return;
         }
       } catch (e) {
@@ -88,6 +100,10 @@ export default function MobileSettings() {
         const data = await response.json();
         if (data.defaultPrice) {
           setDefaultPrice(data.defaultPrice.toString());
+          setTurfName(data.turfName || 'FS Sports Club');
+          setTurfAddress(data.turfAddress || '');
+          setTurfNotes(data.turfNotes || '');
+          setTurfPhone(data.turfPhone || '');
           sessionStorage.setItem('appSettings', JSON.stringify(data));
         }
       }
@@ -254,6 +270,34 @@ export default function MobileSettings() {
     }
   };
 
+  const saveTurfInfo = async () => {
+    try {
+      const response = await fetch('/api/settings/turf', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          turfName,
+          turfAddress,
+          turfNotes,
+          turfPhone,
+        }),
+      });
+
+      if (response.ok) {
+        setEditingTurfInfo(false);
+        // Update cache
+        const settings = { defaultPrice: parseInt(defaultPrice), turfName, turfAddress, turfNotes, turfPhone };
+        sessionStorage.setItem('appSettings', JSON.stringify(settings));
+        alert('Turf info updated successfully');
+      } else {
+        alert('Failed to update turf info');
+      }
+    } catch (error) {
+      console.error('Error saving turf info:', error);
+      alert('Failed to update turf info');
+    }
+  };
+
   const installApp = () => {
     alert('To install:\n\n1. Tap the browser menu (⋮)\n2. Select "Install app" or "Add to Home Screen"\n3. Follow the prompts\n\nThe app will appear on your home screen!');
   };
@@ -272,12 +316,19 @@ export default function MobileSettings() {
           General
         </Button>
         <Button
+          variant={activeTab === 'turf' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('turf')}
+          className="whitespace-nowrap"
+        >
+          Turf Info
+        </Button>
+        <Button
           variant={activeTab === 'recurring' ? 'default' : 'outline'}
           onClick={() => setActiveTab('recurring')}
           className="whitespace-nowrap gap-2"
         >
           <Repeat className="w-4 h-4" />
-          Recurring Bookings
+          Recurring
         </Button>
         {isOwner && (
           <Button
@@ -488,6 +539,101 @@ export default function MobileSettings() {
           Logout
         </Button>
       </Card>
+        </>
+      )}
+
+      {/* Turf Info Tab */}
+      {activeTab === 'turf' && (
+        <>
+          <Card className="p-6 bg-white mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Turf Information</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Customize turf details for booking confirmations
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => editingTurfInfo ? saveTurfInfo() : setEditingTurfInfo(true)}
+              >
+                {editingTurfInfo ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Turf Name */}
+              <div>
+                <Label htmlFor="turfName" className="text-sm font-medium text-gray-700">
+                  Turf Name
+                </Label>
+                <Input
+                  id="turfName"
+                  value={turfName}
+                  onChange={(e) => setTurfName(e.target.value)}
+                  disabled={!editingTurfInfo}
+                  placeholder="Enter turf name"
+                  className="mt-1"
+                />
+              </div>
+
+              {/* Turf Address */}
+              <div>
+                <Label htmlFor="turfAddress" className="text-sm font-medium text-gray-700">
+                  Address
+                </Label>
+                <textarea
+                  id="turfAddress"
+                  value={turfAddress}
+                  onChange={(e) => setTurfAddress(e.target.value)}
+                  disabled={!editingTurfInfo}
+                  placeholder="Enter turf address"
+                  rows={3}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-600"
+                />
+              </div>
+
+              {/* Turf Phone */}
+              <div>
+                <Label htmlFor="turfPhone" className="text-sm font-medium text-gray-700">
+                  Contact Phone
+                </Label>
+                <Input
+                  id="turfPhone"
+                  value={turfPhone}
+                  onChange={(e) => setTurfPhone(e.target.value)}
+                  disabled={!editingTurfInfo}
+                  placeholder="Enter contact number"
+                  className="mt-1"
+                />
+              </div>
+
+              {/* Turf Notes */}
+              <div>
+                <Label htmlFor="turfNotes" className="text-sm font-medium text-gray-700">
+                  Additional Notes
+                </Label>
+                <textarea
+                  id="turfNotes"
+                  value={turfNotes}
+                  onChange={(e) => setTurfNotes(e.target.value)}
+                  disabled={!editingTurfInfo}
+                  placeholder="Any special instructions or notes (optional)"
+                  rows={4}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-600"
+                />
+              </div>
+            </div>
+
+            {editingTurfInfo && (
+              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  💡 This information will be included in WhatsApp booking confirmations sent to customers.
+                </p>
+              </div>
+            )}
+          </Card>
         </>
       )}
 

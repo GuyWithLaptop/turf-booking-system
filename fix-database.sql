@@ -22,9 +22,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS "sports_name_key" ON "sports"("name");
 -- 3. Create AppSettings table
 CREATE TABLE IF NOT EXISTS "app_settings" (
     "id" SERIAL NOT NULL,
-    "appName" TEXT NOT NULL DEFAULT 'Turf Booking',
-    "defaultPricePerHour" DOUBLE PRECISION NOT NULL DEFAULT 500,
-    "currency" TEXT NOT NULL DEFAULT 'INR',
+    "defaultPrice" INTEGER NOT NULL DEFAULT 500,
+    "turfName" TEXT NOT NULL DEFAULT 'FS Sports Club',
+    "turfAddress" TEXT NOT NULL DEFAULT '',
+    "turfNotes" TEXT NOT NULL DEFAULT '',
+    "turfPhone" TEXT NOT NULL DEFAULT '',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -41,8 +43,8 @@ INSERT INTO "sports" ("name", "icon", "active", "sharesGround") VALUES
 ON CONFLICT ("name") DO NOTHING;
 
 -- 5. Insert default settings
-INSERT INTO "app_settings" ("id", "appName", "defaultPricePerHour", "currency") VALUES
-    (1, 'FS Sports Club', 500, 'INR')
+INSERT INTO "app_settings" ("id", "defaultPrice", "turfName", "turfAddress", "turfNotes", "turfPhone") VALUES
+    (1, 500, 'FS Sports Club', 'FS Sports Club, Beside Nayara Petrol Pump, Malegaon', 'FS Sports Club offers a world-class cricket turf facility in Malegaon, operating 24/7 for your convenience. Experience professional-grade equipment and amenities.', '+91 7066990055')
 ON CONFLICT ("id") DO NOTHING;
 
 -- Done!

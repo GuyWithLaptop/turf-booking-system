@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronLeft, ChevronRight, Sun, Moon, X, Check } from 'lucide-react';
 import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfDay, addHours, isToday, isBefore } from 'date-fns';
 
@@ -26,10 +25,10 @@ export default function MobileAvailabilityCalendar() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [selectedSlots, setSelectedSlots] = useState<TimeSlot[]>([]);
   const [showBookingForm, setShowBookingForm] = useState(false);
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurringDays, setRecurringDays] = useState<number[]>([]);
-  const [recurringEndDate, setRecurringEndDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [lastBookingDetails, setLastBookingDetails] = useState<any>(null);
+  const [turfInfo, setTurfInfo] = useState<any>(null);
 
   const [selectedSport, setSelectedSport] = useState('Football');
   const [availableSports, setAvailableSports] = useState<string[]>(['Football', 'Cricket', 'Other']);
@@ -45,6 +44,7 @@ export default function MobileAvailabilityCalendar() {
   useEffect(() => {
     fetchBookings();
     fetchSports();
+    fetchTurfInfo();
   }, []);
 
   useEffect(() => {
@@ -81,6 +81,60 @@ export default function MobileAvailabilityCalendar() {
     } catch (error) {
       console.error('Error fetching sports:', error);
     }
+  };
+
+  const fetchTurfInfo = async () => {
+    try {
+      const response = await fetch('/api/settings');
+      if (response.ok) {
+        const data = await response.json();
+        setTurfInfo(data);
+      }
+    } catch (error) {
+      console.error('Error fetching turf info:', error);
+    }
+  };
+
+  const sendWhatsAppMessage = (bookingDetails: any) => {
+    const { customerName, customerPhone, startTime, endTime, charge, advance, discount, sport } = bookingDetails;
+    
+    const bookingDate = format(new Date(startTime), 'dd MMMM yyyy');
+    const bookingTimeStart = format(new Date(startTime), 'hh:mm a');
+    const bookingTimeEnd = format(new Date(endTime), 'hh:mm a');
+    const hours = Math.round((new Date(endTime).getTime() - new Date(startTime).getTime()) / (1000 * 60 * 60));
+    const totalAmount = charge;
+    const advancePayment = parseInt(advance) || 0;
+    const remaining = totalAmount - advancePayment;
+    
+    const message = `🎉 *Booking Confirmed!*
+
+*Booking Details*
+
+Name: ${customerName}
+Booking Date: ${bookingDate}
+Booking Time: ${bookingTimeStart} to ${bookingTimeEnd}
+Booking Hours: ${hours} hr${hours > 1 ? 's' : ''}
+Sport: ${sport}
+Mobile No: ${customerPhone}
+
+Booking Sub-total: ₹${totalAmount}
+Total Amount: ₹${totalAmount}
+
+Advance Payment: ₹${advancePayment}
+Remaining Amount to be Paid: ₹${remaining}
+
+Thank you for your booking!
+*${turfInfo?.turfName || 'FS SPORTS CLUB'}*
+
+${turfInfo?.turfNotes ? `Notes:\n${turfInfo.turfNotes}` : ''}
+
+${turfInfo?.turfAddress ? `\n📍 ${turfInfo.turfAddress}` : ''}
+${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
+
+    // Remove + and any spaces from phone number
+    const cleanPhone = customerPhone.replace(/[+\s-]/g, '');
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   const fetchBookings = async () => {
@@ -229,56 +283,19 @@ export default function MobileAvailabilityCalendar() {
 
     setIsSubmitting(true);
     try {
-      // Handle recurring booking
-      if (isRecurring) {
-        if (recurringDays.length === 0 || !recurringEndDate) {
-          alert('Please select recurring days and end date');
-          return;
-        }
-
-        // For each selected slot, create a recurring series
-        let totalBookings = 0;
-        for (const slot of selectedSlots) {
-          const response = await fetch('/api/bookings/recurring', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              customerName: formData.customerName,
-              customerPhone: formData.customerPhone,
-              startTime: slot.startTime.toISOString(),
-              endTime: slot.endTime.toISOString(),
-              recurringDays: recurringDays,
-              recurringEndDate: new Date(recurringEndDate).toISOString(),
-              charge: parseInt(formData.price) - parseInt(formData.discount || '0'),
-              notes: `Sport: ${selectedSport} | Advance: ${formData.advance}${formData.notes ? ' | ' + formData.notes : ''}`,
-            }),
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            totalBookings += result.bookings;
-          } else {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to create recurring bookings');
-          }
-        }
-        
-        alert(`Successfully created ${totalBookings} recurring bookings across ${selectedSlots.length} time slot(s)!`);
-        resetForm();
-        fetchBookings();
-      } else {
-        // Handle multi-slot or single booking
-        for (const slot of selectedSlots) {
-          const response = await fetch('/api/bookings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              customerName: formData.customerName,
-              customerPhone: formData.customerPhone,
-              startTime: slot.startTime.toISOString(),
-              endTime: slot.endTime.toISOString(),
-              charge: parseInt(formData.price) - parseInt(formData.discount || '0'),
-              status: 'CONFIRMED',
+      // Handle multi-slot or single booking
+      let createdBookings = [];
+      for (const slot of selectedSlots) {
+        const response = await fetch('/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customerName: formData.customerName,
+            customerPhone: formData.customerPhone,
+            startTime: slot.startTime.toISOString(),
+            endTime: slot.endTime.toISOString(),
+            charge: parseInt(formData.price) - parseInt(formData.discount || '0'),
+            status: 'CONFIRMED',
               notes: `Sport: ${selectedSport} | Advance: ${formData.advance}${formData.notes ? ' | ' + formData.notes : ''}`,
             }),
           });
@@ -287,12 +304,32 @@ export default function MobileAvailabilityCalendar() {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to create booking');
           }
+          
+          const bookingData = await response.json();
+          createdBookings.push(bookingData);
         }
 
-        alert(`Successfully created ${selectedSlots.length} booking(s)!`);
-        resetForm();
-        fetchBookings();
+      // Store last booking details and show success dialog
+      if (createdBookings.length > 0) {
+        // Calculate total hours (each slot is 1 hour)
+        const totalHours = selectedSlots.length;
+        
+        setLastBookingDetails({
+          customerName: formData.customerName,
+          customerPhone: formData.customerPhone,
+          startTime: selectedSlots[0].startTime,
+          endTime: selectedSlots[selectedSlots.length - 1].endTime,
+          charge: (parseInt(formData.price) - parseInt(formData.discount || '0')) * selectedSlots.length,
+          advance: formData.advance,
+          discount: formData.discount,
+          sport: selectedSport,
+          totalHours: totalHours,
+        });
+        setShowSuccessDialog(true);
       }
+      
+      resetForm();
+      fetchBookings();
     } catch (error: any) {
       console.error('Booking error:', error);
       alert(`Failed to create booking: ${error.message}`);
@@ -305,18 +342,7 @@ export default function MobileAvailabilityCalendar() {
     setShowBookingForm(false);
     setShowSlots(false);
     setSelectedSlots([]);
-    setIsRecurring(false);
-    setRecurringDays([]);
-    setRecurringEndDate('');
     setFormData({ customerName: '', customerPhone: '', price: '500', advance: '0', discount: '0', notes: '' });
-  };
-
-  const toggleRecurringDay = (day: number) => {
-    if (recurringDays.includes(day)) {
-      setRecurringDays(recurringDays.filter(d => d !== day));
-    } else {
-      setRecurringDays([...recurringDays, day]);
-    }
   };
 
   return (
@@ -665,68 +691,6 @@ export default function MobileAvailabilityCalendar() {
                   />
                 </div>
               </div>
-
-              {/* Recurring Booking Option */}
-              <div className="border-t pt-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Checkbox
-                    id="recurring"
-                    checked={isRecurring}
-                    onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
-                  />
-                  <Label htmlFor="recurring" className="text-sm font-medium cursor-pointer">
-                    Make this a recurring booking
-                  </Label>
-                </div>
-
-                {isRecurring && (
-                  <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-                    <div>
-                      <Label className="text-sm font-medium mb-2 block">Select Days</Label>
-                      <div className="grid grid-cols-7 gap-2">
-                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => toggleRecurringDay(idx)}
-                            className={`aspect-square rounded-lg text-sm font-medium transition-all ${
-                              recurringDays.includes(idx)
-                                ? 'bg-emerald-500 text-white shadow-lg'
-                                : 'bg-white border border-gray-300 text-gray-700 hover:border-emerald-500'
-                            }`}
-                          >
-                            {day}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="recurringEndDate" className="text-sm font-medium mb-2 block">
-                        Repeat Until
-                      </Label>
-                      <Input
-                        id="recurringEndDate"
-                        type="date"
-                        value={recurringEndDate}
-                        onChange={(e) => setRecurringEndDate(e.target.value)}
-                        min={format(addDays(new Date(), 1), 'yyyy-MM-dd')}
-                        className="w-full"
-                      />
-                    </div>
-
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                      <p className="font-semibold mb-1">ℹ️ Recurring Booking Info:</p>
-                      <p className="text-xs">
-                        {selectedSlots.length === 1 
-                          ? 'This will create bookings for all selected days from now until the end date.'
-                          : `This will create recurring bookings for all ${selectedSlots.length} selected time slots on the selected days until the end date.`
-                        }
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Booking Summary */}
@@ -800,6 +764,165 @@ export default function MobileAvailabilityCalendar() {
               className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Processing...' : 'Confirm Booking'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="max-w-md p-0 overflow-hidden">
+          <div className="text-center py-8 px-6">
+            {/* Celebration Icon */}
+            <div className="relative mx-auto w-32 h-32 mb-6">
+              {/* Confetti background */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute w-full h-full">
+                  <div className="absolute top-2 left-8 w-3 h-3 bg-yellow-400 rounded-sm rotate-12"></div>
+                  <div className="absolute top-6 right-12 w-2 h-2 bg-pink-500 rounded-sm -rotate-12"></div>
+                  <div className="absolute top-10 left-16 w-2 h-2 bg-blue-400 rounded-sm rotate-45"></div>
+                  <div className="absolute top-3 right-6 w-3 h-3 bg-red-500 rounded-sm -rotate-45"></div>
+                  <div className="absolute bottom-8 left-4 w-2 h-2 bg-green-400 rounded-sm rotate-12"></div>
+                  <div className="absolute bottom-10 right-8 w-3 h-3 bg-purple-500 rounded-sm -rotate-12"></div>
+                  <div className="absolute bottom-4 left-12 w-2 h-2 bg-yellow-500 rounded-sm rotate-45"></div>
+                  <div className="absolute bottom-6 right-4 w-2 h-2 bg-pink-400 rounded-sm -rotate-45"></div>
+                  {/* More confetti */}
+                  <div className="absolute top-1 left-20 w-1.5 h-1.5 bg-orange-400 rounded-sm rotate-12"></div>
+                  <div className="absolute top-8 right-20 w-1.5 h-1.5 bg-cyan-500 rounded-sm -rotate-12"></div>
+                  <div className="absolute bottom-12 left-24 w-1.5 h-1.5 bg-lime-400 rounded-sm rotate-45"></div>
+                  <div className="absolute bottom-2 right-16 w-2 h-2 bg-indigo-500 rounded-sm -rotate-45"></div>
+                  {/* Rays */}
+                  <div className="absolute top-0 left-1/2 w-1 h-8 bg-gray-300 -translate-x-1/2 origin-bottom rotate-0"></div>
+                  <div className="absolute top-2 left-1/2 w-1 h-10 bg-gray-300 -translate-x-1/2 origin-bottom rotate-45"></div>
+                  <div className="absolute top-2 left-1/2 w-1 h-10 bg-gray-300 -translate-x-1/2 origin-bottom -rotate-45"></div>
+                  <div className="absolute top-4 left-1/2 w-1 h-12 bg-gray-300 -translate-x-1/2 origin-bottom rotate-90"></div>
+                  <div className="absolute top-4 left-1/2 w-1 h-12 bg-gray-300 -translate-x-1/2 origin-bottom -rotate-90"></div>
+                </div>
+              </div>
+              {/* Calendar Icon with checkmark */}
+              <div className="relative z-10 w-24 h-24 mx-auto bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                <svg className="w-14 h-14 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2"/>
+                  <path d="M9 14l2 2 4-4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            
+            <h2 className="text-2xl font-bold text-emerald-600 mb-6">Slot successfully booked !</h2>
+            
+            {lastBookingDetails && (
+              <div className="bg-white border-2 border-gray-200 rounded-xl p-6 text-left">
+                <h3 className="text-lg font-semibold text-emerald-600 mb-6 text-center">Booking details</h3>
+                
+                {/* Two column layout for date/time and name/phone */}
+                <div className="grid grid-cols-2 gap-6 mb-6 pb-6 border-b border-gray-200">
+                  <div>
+                    <div className="font-semibold text-gray-900 mb-1">
+                      {format(new Date(lastBookingDetails.startTime), 'dd MMM., yyyy')} | {(() => {
+                        const sportIcons: { [key: string]: string } = {
+                          'Football': '⚽',
+                          'Cricket': '🏏',
+                          'Basketball': '🏀',
+                          'Badminton': '🏸',
+                          'Tennis': '🎾',
+                          'Volleyball': '🏐',
+                        };
+                        return sportIcons[lastBookingDetails.sport] || '🏆';
+                      })()} {lastBookingDetails.sport.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {format(new Date(lastBookingDetails.startTime), 'hh:mm a')} - {format(new Date(lastBookingDetails.endTime), 'hh:mm a')}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-gray-900 mb-1">{lastBookingDetails.customerName}</div>
+                    <div className="text-sm text-gray-600">+{lastBookingDetails.customerPhone}</div>
+                  </div>
+                </div>
+                
+                {/* Payment details */}
+                <div className="space-y-3 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Booking Hours</span>
+                    <span className="font-medium text-gray-900">{lastBookingDetails.totalHours} hrs</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Booking sub-total</span>
+                    <span className="font-medium text-gray-900">Rs. {lastBookingDetails.charge + (parseInt(lastBookingDetails.discount) || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Advance payment</span>
+                    <span className="font-medium text-gray-900">Rs. {lastBookingDetails.advance || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Discount</span>
+                    <span className="font-medium text-gray-900">Rs. {lastBookingDetails.discount || 0}</span>
+                  </div>
+                  <div className="flex justify-between pt-3 border-t border-gray-200 text-base font-bold text-gray-900">
+                    <span>Total Amount</span>
+                    <span>Rs. {lastBookingDetails.charge}</span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => setShowSuccessDialog(false)}
+                  variant="outline"
+                  className="w-full mt-6 py-6 text-base font-semibold"
+                >
+                  Edit Booking
+                </Button>
+              </div>
+            )}
+
+            {/* Share Booking Details */}
+            <div className="mt-6">
+              <h4 className="text-base font-semibold text-gray-900 mb-4">Share Booking Details</h4>
+              <div className="flex justify-center gap-6">
+                <button
+                  onClick={() => {
+                    sendWhatsAppMessage(lastBookingDetails);
+                  }}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <div className="w-14 h-14 bg-green-500 rounded-lg flex items-center justify-center">
+                    <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                    </svg>
+                  </div>
+                </button>
+                <button className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 bg-gray-100 border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                    <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="3" y="3" width="7" height="7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <rect x="14" y="3" width="7" height="7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <rect x="14" y="14" width="7" height="7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <rect x="3" y="14" width="7" height="7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </button>
+                <button className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-14 bg-gray-100 border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                    <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle cx="18" cy="5" r="3" strokeWidth="2"/>
+                      <circle cx="6" cy="12" r="3" strokeWidth="2"/>
+                      <circle cx="18" cy="19" r="3" strokeWidth="2"/>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" strokeWidth="2"/>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" strokeWidth="2"/>
+                    </svg>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <Button
+              onClick={() => setShowSuccessDialog(false)}
+              variant="outline"
+              className="w-full mt-6 py-6 text-base font-semibold"
+            >
+              Go to dashboard
             </Button>
           </div>
         </DialogContent>

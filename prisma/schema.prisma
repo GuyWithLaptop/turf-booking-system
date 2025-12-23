@@ -147,6 +147,10 @@ model Sport {
 model AppSettings {
   id           Int      @id @default(1)
   defaultPrice Int      @default(500)
+  turfName     String   @default("FS Sports Club")
+  turfAddress  String   @default("")
+  turfNotes    String   @default("")
+  turfPhone    String   @default("")
   updatedAt    DateTime @updatedAt
 
   @@map("app_settings")
