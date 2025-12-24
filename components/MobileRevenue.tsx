@@ -55,12 +55,14 @@ export default function MobileRevenue() {
 
   // Calculate last 7 days revenue grouped by date
   const last7DaysRevenue: DailyRevenue[] = [];
+  const now = new Date();
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   const recentBookings = bookings.filter((b) => {
-    const bookingDate = new Date(b.startTime);
-    return bookingDate >= sevenDaysAgo && b.status !== 'CANCELLED';
+    const bookingEndTime = new Date(b.endTime);
+    // Only count bookings that have already finished (endTime is in the past)
+    return bookingEndTime < now && bookingEndTime >= sevenDaysAgo && b.status !== 'CANCELLED';
   });
 
   // Group by date

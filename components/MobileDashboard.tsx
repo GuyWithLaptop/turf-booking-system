@@ -139,10 +139,12 @@ export default function MobileDashboard() {
 
   const last7DaysRevenue = bookings
     .filter((b) => {
-      const bookingDate = new Date(b.startTime);
+      const now = new Date();
+      const bookingEndTime = new Date(b.endTime);
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      return bookingDate >= sevenDaysAgo && b.status !== 'CANCELLED';
+      // Only count bookings that have already finished (endTime is in the past)
+      return bookingEndTime < now && bookingEndTime >= sevenDaysAgo && b.status !== 'CANCELLED';
     })
     .reduce((sum, b) => sum + b.charge, 0);
 
