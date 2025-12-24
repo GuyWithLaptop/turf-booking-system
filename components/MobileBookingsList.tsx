@@ -112,8 +112,41 @@ export default function MobileBookingsList() {
     return b.status !== 'CANCELLED';
   });
 
-  // Sort bookings by date
-  const sortedBookings = filteredBookings.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+  // Group bookings by customer, date, and sport
+  const groupBookings = (bookings: Booking[]) => {
+    const grouped: { [key: string]: Booking[] } = {};
+    
+    bookings.forEach(booking => {
+      const date = format(new Date(booking.startTime), 'yyyy-MM-dd');
+      const key = `${booking.customerPhone}-${date}-${booking.sport || 'none'}`;
+      
+      if (!grouped[key]) {
+        grouped[key] = [];
+      }
+      grouped[key].push(booking);
+    });
+    
+    // Sort slots within each group and merge consecutive slots
+    return Object.values(grouped).map(group => {
+      // Sort by start time
+      const sorted = group.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      
+      // Use the first booking as base and combine time range
+      const firstBooking = sorted[0];
+      const lastBooking = sorted[sorted.length - 1];
+      
+      return {
+        ...firstBooking,
+        endTime: lastBooking.endTime,
+        // Store all booking IDs for reference
+        allIds: sorted.map(b => b.id)
+      };
+    });
+  };
+
+  // Group and sort bookings by date
+  const groupedBookings = groupBookings(filteredBookings);
+  const sortedBookings = groupedBookings.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
   const sports = ['ALL', ...Array.from(new Set(bookings.map(b => b.sport).filter((s): s is string => !!s)))];
   const statuses = ['ALL', 'PENDING', 'COMPLETED', 'CONFIRMED'];
