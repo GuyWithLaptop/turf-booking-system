@@ -204,15 +204,29 @@ export async function DELETE(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const parentBookingId = searchParams.get('parentBookingId');
-    const deleteType = searchParams.get('type') || 'future'; // 'all' or 'future'
+    const deleteType = searchParams.get('type') || 'future'; // 'all', 'future', or 'remove'
 
     if (!parentBookingId) {
       return NextResponse.json({ error: 'Parent booking ID required' }, { status: 400 });
     }
 
+    // If type is 'remove', permanently delete all bookings
+    if (deleteType === 'remove') {
+      const result = await prisma.booking.deleteMany({
+        where: { parentBookingId },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Permanently removed ${result.count} booking(s)`,
+        deleted: result.count,
+      }, { status: 200 });
+    }
+
+    // Otherwise, just cancel bookings (update status to CANCELLED)
     let whereClause: any = { parentBookingId };
 
-    // Only delete future bookings by default
+    // Only cancel future bookings by default
     if (deleteType === 'future') {
       whereClause.startTime = { gte: new Date() };
     }
@@ -230,6 +244,6 @@ export async function DELETE(req: Request) {
 
   } catch (error) {
     console.error('Delete recurring bookings error:', error);
-    return NextResponse.json({ error: 'Failed to cancel recurring bookings' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to process recurring bookings' }, { status: 500 });
   }
 }

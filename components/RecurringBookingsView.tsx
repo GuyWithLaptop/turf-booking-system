@@ -115,6 +115,26 @@ export default function RecurringBookingsView() {
     }
   };
 
+  const handleRemoveSeries = async (parentBookingId: string) => {
+    if (!confirm('Permanently REMOVE this entire booking series? This will delete all bookings (past, present, and future) and cannot be undone.')) return;
+
+    try {
+      const response = await fetch(
+        `/api/bookings/recurring?parentBookingId=${parentBookingId}&type=remove`,
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) throw new Error('Failed to remove booking series');
+
+      const result = await response.json();
+      alert(`Successfully removed ${result.deleted} booking(s) from the series`);
+      fetchRecurringBookings();
+    } catch (error) {
+      alert('Failed to remove booking series');
+      console.error(error);
+    }
+  };
+
   const handleCancelSingleBooking = async (bookingId: string, bookingDate: string) => {
     if (!confirm(`Cancel booking for ${bookingDate}?`)) return;
 
@@ -155,7 +175,7 @@ export default function RecurringBookingsView() {
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading recurring bookings...</p>
+          <p className="mt-4 text-gray-600">Loading permanent bookings...</p>
         </div>
       </div>
     );
@@ -166,9 +186,9 @@ export default function RecurringBookingsView() {
       <Card>
         <CardContent className="p-8 text-center">
           <Repeat className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">No Recurring Bookings</h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">No Permanent Bookings</h3>
           <p className="text-gray-500">
-            Create a recurring booking from the booking modal to see them here.
+            Create a permanent booking from the group booking section to see them here.
           </p>
         </CardContent>
       </Card>
@@ -179,7 +199,7 @@ export default function RecurringBookingsView() {
     <div className="space-y-4 max-w-full overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Recurring Bookings</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Permanent Bookings</h2>
           <p className="text-sm text-gray-600">Manage booking series</p>
         </div>
         <Badge variant="secondary" className="text-base sm:text-lg px-3 py-1 sm:px-4 sm:py-2 w-fit">
@@ -275,6 +295,15 @@ export default function RecurringBookingsView() {
                   >
                     <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                     Cancel All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRemoveSeries(group.parentBookingId)}
+                    className="text-red-700 hover:text-red-800 hover:bg-red-100 border-red-300 text-xs sm:text-sm font-semibold"
+                  >
+                    <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                    Remove Booking
                   </Button>
                 </div>
 

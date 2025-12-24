@@ -140,14 +140,9 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
 
     setIsSubmitting(true);
     try {
-      let totalBookings = 0;
-      
-      // Create recurring bookings for each selected time slot
-      for (const timeSlot of selectedTimeSlots) {
-        // Parse time slot "HH:MM AM/PM - HH:MM AM/PM"
+      // Sort time slots to get earliest start and latest end
+      const parsedSlots = selectedTimeSlots.map(timeSlot => {
         const [startTimeStr, endTimeStr] = timeSlot.split(' - ');
-        
-        // Convert to ISO datetime strings
         const startDateTime = parseTimeSlot(startDate, startTimeStr);
         const endDateTime = parseTimeSlot(startDate, endTimeStr);
         
@@ -156,31 +151,37 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
           endDateTime.setDate(endDateTime.getDate() + 1);
         }
         
-        const response = await fetch('/api/bookings/recurring', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            customerName,
-            customerPhone,
-            startTime: startDateTime.toISOString(),
-            endTime: endDateTime.toISOString(),
-            recurringDays: selectedDays,
-            recurringEndDate: new Date(endDate).toISOString(),
-            charge: 500, // Default price, can be customized
-            notes: `Sport: ${selectedSport} | Group Booking`,
-          }),
-        });
+        return { start: startDateTime, end: endDateTime };
+      }).sort((a, b) => a.start.getTime() - b.start.getTime());
+      
+      // Use earliest start time and latest end time to create ONE recurring series
+      const startDateTime = parsedSlots[0].start;
+      const endDateTime = parsedSlots[parsedSlots.length - 1].end;
+      
+      const response = await fetch('/api/bookings/recurring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName,
+          customerPhone,
+          startTime: startDateTime.toISOString(),
+          endTime: endDateTime.toISOString(),
+          recurringDays: selectedDays,
+          recurringEndDate: new Date(endDate).toISOString(),
+          charge: 500, // Default price, can be customized
+          notes: `Sport: ${selectedSport} | Permanent Booking (${selectedTimeSlots.length} slot${selectedTimeSlots.length > 1 ? 's' : ''})`,
+        }),
+      });
 
-        if (response.ok) {
-          const result = await response.json();
-          totalBookings += result.bookings || 0;
-        } else {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to create recurring bookings');
-        }
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create permanent bookings');
       }
 
-      alert(`✅ Successfully created ${totalBookings} recurring bookings!\n\nCustomer: ${customerName}\nSport: ${selectedSport}\nTime Slots: ${selectedTimeSlots.length}\nDays: ${selectedDays.length}`);
+      const result = await response.json();
+      const totalBookings = result.bookings || 0;
+
+      alert(`✅ Successfully created ${totalBookings} permanent bookings!\n\nCustomer: ${customerName}\nSport: ${selectedSport}\nTime Slots: ${selectedTimeSlots.length}\nDays: ${selectedDays.length}`);
       
       // Reset form
       setStartDate('');
@@ -192,8 +193,8 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
       setShowSlots(false);
       
     } catch (error: any) {
-      console.error('Error creating recurring bookings:', error);
-      alert(`Failed to create recurring bookings: ${error.message}`);
+      console.error('Error creating permanent bookings:', error);
+      alert(`Failed to create permanent bookings: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
