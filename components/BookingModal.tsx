@@ -129,46 +129,39 @@ export default function BookingModal({
         }
       }
 
-      // Handle multiple slot bookings
+      // Handle multiple slot bookings - create ONE booking with combined time range
       if (selectedSlots.length > 1 && !booking) {
-        let successCount = 0;
-        let failedCount = 0;
+        // Sort slots by start time
+        const sortedSlots = [...selectedSlots].sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+        
+        // Use earliest start time and latest end time
+        const startTime = sortedSlots[0].startTime;
+        const endTime = sortedSlots[sortedSlots.length - 1].endTime;
 
-        for (const slot of selectedSlots) {
-          try {
-            const payload = {
-              customerName: formData.customerName,
-              customerPhone: formData.customerPhone,
-              startTime: slot.startTime.toISOString(),
-              endTime: slot.endTime.toISOString(),
-              status: formData.status,
-              charge: parseFloat(formData.charge),
-              notes: formData.notes,
-            };
+        const payload = {
+          customerName: formData.customerName,
+          customerPhone: formData.customerPhone,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          status: formData.status,
+          charge: parseFloat(formData.charge),
+          notes: formData.notes,
+        };
 
-            const response = await fetch('/api/bookings', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-            });
+        const response = await fetch('/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
 
-            if (response.ok) {
-              successCount++;
-            } else {
-              failedCount++;
-            }
-          } catch {
-            failedCount++;
-          }
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to create booking');
         }
 
-        if (successCount > 0) {
-          alert(`Successfully created ${successCount} booking(s)${failedCount > 0 ? `. ${failedCount} failed.` : '!'}`);
-          onSave();
-          onClose();
-        } else {
-          throw new Error('All bookings failed');
-        }
+        alert(`Successfully created 1 booking for ${selectedSlots.length} slot(s)!`);
+        onSave();
+        onClose();
         return;
       }
 
