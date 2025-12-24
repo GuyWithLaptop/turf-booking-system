@@ -836,17 +836,7 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
                 <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-200">
                   <div>
                     <div className="font-semibold text-gray-900 mb-1">
-                      {format(new Date(lastBookingDetails.startTime), 'dd MMM., yyyy')} | {(() => {
-                        const sportIcons: { [key: string]: string } = {
-                          'Football': '⚽',
-                          'Cricket': '🏏',
-                          'Basketball': '🏀',
-                          'Badminton': '🏸',
-                          'Tennis': '🎾',
-                          'Volleyball': '🏐',
-                        };
-                        return sportIcons[lastBookingDetails.sport] || '🏆';
-                      })()} {lastBookingDetails.sport.substring(0, 2).toUpperCase()}
+                      {format(new Date(lastBookingDetails.startTime), 'dd MMM., yyyy')} | {format(new Date(lastBookingDetails.startTime), 'EEEE')}
                     </div>
                     <div className="text-sm text-gray-600">
                       {format(new Date(lastBookingDetails.startTime), 'hh:mm a')} - {format(new Date(lastBookingDetails.endTime), 'hh:mm a')}

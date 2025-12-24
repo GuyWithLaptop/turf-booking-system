@@ -22,6 +22,17 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [bookingResult, setBookingResult] = useState<{
+    totalBookings: number;
+    customerName: string;
+    customerPhone: string;
+    sport: string;
+    startDate: string;
+    endDate: string;
+    timeSlots: string[];
+    days: number[];
+  } | null>(null);
 
   useEffect(() => {
     fetchSports();
@@ -181,7 +192,20 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
       const result = await response.json();
       const totalBookings = result.bookings || 0;
 
-      alert(`✅ Successfully created ${totalBookings} permanent bookings!\n\nCustomer: ${customerName}\nSport: ${selectedSport}\nTime Slots: ${selectedTimeSlots.length}\nDays: ${selectedDays.length}`);
+      // Store booking details for success dialog
+      setBookingResult({
+        totalBookings,
+        customerName,
+        customerPhone,
+        sport: selectedSport,
+        startDate,
+        endDate,
+        timeSlots: selectedTimeSlots,
+        days: selectedDays,
+      });
+      
+      // Show success dialog
+      setShowSuccessDialog(true);
       
       // Reset form
       setStartDate('');
@@ -389,6 +413,103 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
           {isSubmitting ? 'Creating Bookings...' : `Create Group Booking (${selectedTimeSlots.length} slots × ${selectedDays.length} days)`}
         </Button>
       </div>
+
+      {/* Success Dialog */}
+      {showSuccessDialog && bookingResult && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Close button */}
+              <button
+                onClick={() => {
+                  setShowSuccessDialog(false);
+                  onBack();
+                }}
+                className="float-right text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+
+              {/* Success Icon */}
+              <div className="flex justify-center mb-4 mt-2">
+                <div className="relative">
+                  <div className="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" strokeLinecap="round"/>
+                      <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" strokeLinecap="round"/>
+                      <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2"/>
+                      <path d="M9 14l2 2 4-4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div className="absolute top-0 right-0 w-6 h-6 bg-yellow-400 rounded-full"></div>
+                  <div className="absolute bottom-2 left-0 w-4 h-4 bg-blue-400 rounded-full"></div>
+                  <div className="absolute top-2 left-0 w-3 h-3 bg-pink-400 rounded-full"></div>
+                </div>
+              </div>
+
+              <h2 className="text-xl font-bold text-emerald-600 mb-4 text-center">Permanent booking created !</h2>
+
+              <div className="bg-white border-2 border-gray-200 rounded-xl p-4">
+                <h3 className="text-base font-semibold text-emerald-600 mb-4 text-center">Booking details</h3>
+
+                {/* Customer and Date info */}
+                <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-200">
+                  <div>
+                    <div className="font-semibold text-gray-900 mb-1">
+                      {format(new Date(bookingResult.startDate), 'dd MMM., yyyy')} - {format(new Date(bookingResult.endDate), 'dd MMM., yyyy')}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {bookingResult.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {getSportIcon(bookingResult.sport)} {bookingResult.sport}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-gray-900 mb-1">{bookingResult.customerName}</div>
+                    <div className="text-sm text-gray-600">+{bookingResult.customerPhone}</div>
+                  </div>
+                </div>
+
+                {/* Booking Summary */}
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Total Bookings Created</span>
+                    <span className="font-medium text-gray-900">{bookingResult.totalBookings}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Time Slots per Day</span>
+                    <span className="font-medium text-gray-900">{bookingResult.timeSlots.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Days per Week</span>
+                    <span className="font-medium text-gray-900">{bookingResult.days.length}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-gray-200">
+                    <span className="font-semibold">Selected Slots:</span>
+                  </div>
+                  <div className="pl-2 text-xs text-gray-600">
+                    {bookingResult.timeSlots.map((slot, idx) => (
+                      <div key={idx}>• {slot}</div>
+                    ))}
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => {
+                    setShowSuccessDialog(false);
+                    onBack();
+                  }}
+                  className="w-full mt-4 py-4 text-sm font-semibold bg-emerald-500 hover:bg-emerald-600"
+                >
+                  Go to Settings
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
