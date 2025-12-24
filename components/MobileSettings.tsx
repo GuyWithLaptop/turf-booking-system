@@ -38,7 +38,7 @@ export default function MobileSettings() {
   const [newSubAdminName, setNewSubAdminName] = useState('');
   const [addingSubAdmin, setAddingSubAdmin] = useState(false);
 
-  // Recurring booking state
+  // Permanent booking state
   const [showGroupBooking, setShowGroupBooking] = useState(false);
 
   const isOwner = session?.user?.role === 'OWNER';
@@ -332,7 +332,7 @@ export default function MobileSettings() {
           className="whitespace-nowrap gap-2"
         >
           <Repeat className="w-4 h-4" />
-          Recurring
+          Permanent
         </Button>
         {isOwner && (
           <Button
@@ -706,7 +706,7 @@ export default function MobileSettings() {
         </>
       )}
 
-      {/* Recurring Bookings Tab */}
+      {/* Permanent Bookings Tab */}
       {activeTab === 'recurring' && (
         <>
           {showGroupBooking ? (
