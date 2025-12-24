@@ -112,36 +112,68 @@ export default function MobileBookingsList() {
     return b.status !== 'CANCELLED';
   });
 
-  // Group bookings by customer, date, and sport
+  // Group ONLY consecutive bookings (same customer, date, sport, and consecutive time slots)
   const groupBookings = (bookings: Booking[]) => {
-    const grouped: { [key: string]: Booking[] } = {};
+    if (bookings.length === 0) return [];
     
-    bookings.forEach(booking => {
-      const date = format(new Date(booking.startTime), 'yyyy-MM-dd');
-      const key = `${booking.customerPhone}-${date}-${booking.sport || 'none'}`;
+    // Sort all bookings by customer, date, sport, then start time
+    const sorted = [...bookings].sort((a, b) => {
+      const phoneCompare = a.customerPhone.localeCompare(b.customerPhone);
+      if (phoneCompare !== 0) return phoneCompare;
       
-      if (!grouped[key]) {
-        grouped[key] = [];
+      const dateCompare = format(new Date(a.startTime), 'yyyy-MM-dd').localeCompare(
+        format(new Date(b.startTime), 'yyyy-MM-dd')
+      );
+      if (dateCompare !== 0) return dateCompare;
+      
+      const sportCompare = (a.sport || '').localeCompare(b.sport || '');
+      if (sportCompare !== 0) return sportCompare;
+      
+      return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+    });
+    
+    const result: Booking[] = [];
+    let currentGroup: Booking[] = [sorted[0]];
+    
+    for (let i = 1; i < sorted.length; i++) {
+      const current = sorted[i];
+      const previous = sorted[i - 1];
+      
+      // Check if current booking is consecutive to the previous one
+      const isSameCustomer = current.customerPhone === previous.customerPhone;
+      const isSameDate = format(new Date(current.startTime), 'yyyy-MM-dd') === 
+                         format(new Date(previous.startTime), 'yyyy-MM-dd');
+      const isSameSport = (current.sport || 'none') === (previous.sport || 'none');
+      const isConsecutive = new Date(previous.endTime).getTime() === new Date(current.startTime).getTime();
+      
+      if (isSameCustomer && isSameDate && isSameSport && isConsecutive) {
+        // Add to current group
+        currentGroup.push(current);
+      } else {
+        // Finish current group and start a new one
+        if (currentGroup.length > 0) {
+          const firstBooking = currentGroup[0];
+          const lastBooking = currentGroup[currentGroup.length - 1];
+          result.push({
+            ...firstBooking,
+            endTime: lastBooking.endTime
+          });
+        }
+        currentGroup = [current];
       }
-      grouped[key].push(booking);
-    });
+    }
     
-    // Sort slots within each group and merge consecutive slots
-    return Object.values(grouped).map(group => {
-      // Sort by start time
-      const sorted = group.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-      
-      // Use the first booking as base and combine time range
-      const firstBooking = sorted[0];
-      const lastBooking = sorted[sorted.length - 1];
-      
-      return {
+    // Add the last group
+    if (currentGroup.length > 0) {
+      const firstBooking = currentGroup[0];
+      const lastBooking = currentGroup[currentGroup.length - 1];
+      result.push({
         ...firstBooking,
-        endTime: lastBooking.endTime,
-        // Store all booking IDs for reference
-        allIds: sorted.map(b => b.id)
-      };
-    });
+        endTime: lastBooking.endTime
+      });
+    }
+    
+    return result;
   };
 
   // Group and sort bookings by date

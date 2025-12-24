@@ -73,13 +73,69 @@ export default function MobileDashboard() {
     return booking.status;
   };
 
-  const todayBookings = bookings.filter((b) =>
+  // Group ONLY consecutive bookings (same customer, date, and consecutive time slots)
+  const groupConsecutiveBookings = (bookings: Booking[]) => {
+    if (bookings.length === 0) return [];
+    
+    // Sort bookings by customer phone, then start time
+    const sorted = [...bookings].sort((a, b) => {
+      const phoneCompare = a.customerPhone.localeCompare(b.customerPhone);
+      if (phoneCompare !== 0) return phoneCompare;
+      return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+    });
+    
+    const result: Booking[] = [];
+    let currentGroup: Booking[] = [sorted[0]];
+    
+    for (let i = 1; i < sorted.length; i++) {
+      const current = sorted[i];
+      const previous = sorted[i - 1];
+      
+      // Check if current booking is consecutive to the previous one
+      const isSameCustomer = current.customerPhone === previous.customerPhone;
+      const isConsecutive = new Date(previous.endTime).getTime() === new Date(current.startTime).getTime();
+      
+      if (isSameCustomer && isConsecutive) {
+        // Add to current group
+        currentGroup.push(current);
+      } else {
+        // Finish current group and start a new one
+        if (currentGroup.length > 0) {
+          const firstBooking = currentGroup[0];
+          const lastBooking = currentGroup[currentGroup.length - 1];
+          result.push({
+            ...firstBooking,
+            endTime: lastBooking.endTime,
+            charge: currentGroup.reduce((sum, b) => sum + b.charge, 0)
+          });
+        }
+        currentGroup = [current];
+      }
+    }
+    
+    // Add the last group
+    if (currentGroup.length > 0) {
+      const firstBooking = currentGroup[0];
+      const lastBooking = currentGroup[currentGroup.length - 1];
+      result.push({
+        ...firstBooking,
+        endTime: lastBooking.endTime,
+        charge: currentGroup.reduce((sum, b) => sum + b.charge, 0)
+      });
+    }
+    
+    return result;
+  };
+
+  const todayBookingsRaw = bookings.filter((b) =>
     isToday(new Date(b.startTime)) && b.status !== 'CANCELLED'
   );
+  const todayBookings = groupConsecutiveBookings(todayBookingsRaw);
 
-  const upcomingBookings = bookings.filter((b) =>
+  const upcomingBookingsRaw = bookings.filter((b) =>
     isFuture(new Date(b.startTime)) && !isToday(new Date(b.startTime)) && b.status !== 'CANCELLED'
-  ).slice(0, 5);
+  );
+  const upcomingBookings = groupConsecutiveBookings(upcomingBookingsRaw).slice(0, 5);
 
   const last7DaysRevenue = bookings
     .filter((b) => {
@@ -108,7 +164,7 @@ export default function MobileDashboard() {
               <Calendar className="w-8 h-8 text-white" />
             </div>
           </div>
-          <div className="text-5xl font-bold text-white mb-1">{todayBookings.length}</div>
+          <div className="text-5xl font-bold text-white mb-1">{todayBookingsRaw.length}</div>
           <div className="text-sm text-emerald-50 font-medium">Today's bookings</div>
         </Card>
 
