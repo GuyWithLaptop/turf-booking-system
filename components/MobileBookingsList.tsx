@@ -325,6 +325,7 @@ export default function MobileBookingsList() {
                       <div>
                         <div className="font-semibold text-gray-900">{booking.customerName}</div>
                         <div className="text-sm text-gray-600">{booking.customerPhone}</div>
+                        <div className="text-lg font-bold text-emerald-600 mt-1">₹{booking.charge}</div>
                       </div>
                       <ChevronRight className="w-5 h-5 text-gray-400" />
                     </div>

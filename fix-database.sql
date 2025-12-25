@@ -33,7 +33,10 @@ BEGIN
 
     -- Add columns if they don't exist
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'app_settings' AND column_name = 'defaultPrice') THEN
-        ALTER TABLE "app_settings" ADD COLUMN "defaultPrice" INTEGER NOT NULL DEFAULT 500;
+        ALTER TABLE "app_settings" ADD COLUMN "defaultPrice" DOUBLE PRECISION NOT NULL DEFAULT 500;
+    ELSE
+        -- Change existing column to DOUBLE PRECISION if it's INTEGER
+        ALTER TABLE "app_settings" ALTER COLUMN "defaultPrice" TYPE DOUBLE PRECISION;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'app_settings' AND column_name = 'turfName') THEN
