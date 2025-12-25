@@ -304,50 +304,50 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
 
     setIsSubmitting(true);
     try {
-      // Handle multi-slot or single booking
-      let createdBookings = [];
-      for (const slot of selectedSlots) {
-        const response = await fetch('/api/bookings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            customerName: formData.customerName,
-            customerPhone: formData.customerPhone,
-            startTime: slot.startTime.toISOString(),
-            endTime: slot.endTime.toISOString(),
-            charge: parseFloat(formData.price) - parseFloat(formData.discount || '0'),
-            status: 'CONFIRMED',
-              notes: `Sport: ${selectedSport} | Advance: ${formData.advance}${formData.notes ? ' | ' + formData.notes : ''}`,
-            }),
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to create booking');
-          }
-          
-          const bookingData = await response.json();
-          createdBookings.push(bookingData);
-        }
-
-      // Store last booking details and show success dialog
-      if (createdBookings.length > 0) {
-        // Calculate total hours (each slot is 1 hour)
-        const totalHours = selectedSlots.length;
-        
-        setLastBookingDetails({
+      // Sort slots to get earliest start and latest end time for ONE booking
+      const sortedSlots = [...selectedSlots].sort((a, b) => 
+        a.startTime.getTime() - b.startTime.getTime()
+      );
+      
+      const startTime = sortedSlots[0].startTime;
+      const endTime = sortedSlots[sortedSlots.length - 1].endTime;
+      
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           customerName: formData.customerName,
           customerPhone: formData.customerPhone,
-          startTime: selectedSlots[0].startTime,
-          endTime: selectedSlots[selectedSlots.length - 1].endTime,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
           charge: (parseFloat(formData.price) - parseFloat(formData.discount || '0')) * selectedSlots.length,
-          advance: formData.advance,
-          discount: formData.discount,
-          sport: selectedSport,
-          totalHours: totalHours,
-        });
-        setShowSuccessDialog(true);
+          status: 'CONFIRMED',
+          notes: `Sport: ${selectedSport} | Advance: ${formData.advance}${formData.notes ? ' | ' + formData.notes : ''}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create booking');
       }
+      
+      const bookingData = await response.json();
+
+      // Store booking details and show success dialog
+      const totalHours = selectedSlots.length;
+      
+      setLastBookingDetails({
+        customerName: formData.customerName,
+        customerPhone: formData.customerPhone,
+        startTime: startTime,
+        endTime: endTime,
+        charge: (parseFloat(formData.price) - parseFloat(formData.discount || '0')) * selectedSlots.length,
+        advance: formData.advance,
+        discount: formData.discount,
+        sport: selectedSport,
+        totalHours: totalHours,
+      });
+      setShowSuccessDialog(true);
       
       resetForm();
       fetchBookings();
