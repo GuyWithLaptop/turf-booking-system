@@ -201,7 +201,7 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
           endTime: endDateTime.toISOString(),
           recurringDays: selectedDays,
           recurringEndDate: new Date(endDate).toISOString(),
-          charge: parseFloat(pricePerSlot) || 500,
+          charge: (parseFloat(pricePerSlot) || 500) * selectedTimeSlots.length,
           notes: `Sport: ${selectedSport} | Permanent Booking (${selectedTimeSlots.length} slot${selectedTimeSlots.length > 1 ? 's' : ''})`,
         }),
       });
