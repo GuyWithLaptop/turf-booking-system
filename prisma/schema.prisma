@@ -142,7 +142,7 @@ model VerificationToken {
 }
 
 model Sport {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   name      String   @unique
   createdAt DateTime @default(now())
 
