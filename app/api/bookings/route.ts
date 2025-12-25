@@ -11,7 +11,7 @@ const bookingSchema = z.object({
   endTime: z.string().datetime(),
   status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED']),
   notes: z.string().optional(),
-  charge: z.number().positive().optional().default(500),
+  charge: z.number().positive(),
 });
 
 // GET - Fetch all bookings (public + admin)
