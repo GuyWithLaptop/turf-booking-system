@@ -78,7 +78,7 @@ model Booking {
   startTime      DateTime
   endTime        DateTime
   status         BookingStatus @default(PENDING)
-  charge         Float         @default(500)
+  charge         Float
   notes          String?       @db.Text
   
   // Payment fields

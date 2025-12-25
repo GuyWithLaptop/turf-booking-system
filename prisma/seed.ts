@@ -34,6 +34,7 @@ async function main() {
       startTime: new Date(today.getTime() + 8 * 60 * 60 * 1000), // 8 AM today
       endTime: new Date(today.getTime() + 9 * 60 * 60 * 1000), // 9 AM today
       status: 'CONFIRMED',
+      charge: 500,
       notes: 'Regular customer',
       createdById: owner.id,
     },
@@ -43,6 +44,7 @@ async function main() {
       startTime: new Date(today.getTime() + 18 * 60 * 60 * 1000), // 6 PM today
       endTime: new Date(today.getTime() + 19 * 60 * 60 * 1000), // 7 PM today
       status: 'CONFIRMED',
+      charge: 500,
       notes: 'Birthday celebration match',
       createdById: owner.id,
     },
@@ -52,6 +54,7 @@ async function main() {
       startTime: new Date(today.getTime() + 24 * 60 * 60 * 1000 + 17 * 60 * 60 * 1000), // 5 PM tomorrow
       endTime: new Date(today.getTime() + 24 * 60 * 60 * 1000 + 18 * 60 * 60 * 1000), // 6 PM tomorrow
       status: 'PENDING',
+      charge: 500,
       notes: 'Awaiting confirmation call',
       createdById: owner.id,
     },

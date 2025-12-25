@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
         startTime: new Date(validatedData.startTime),
         endTime: new Date(validatedData.endTime),
         status: validatedData.status,
+        charge: validatedData.charge,
         notes: validatedData.notes,
         createdById: userId,
       },
