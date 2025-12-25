@@ -19,8 +19,10 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
   const [showSlots, setShowSlots] = useState(false);
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<string[]>([]);
   const [availableSports, setAvailableSports] = useState<string[]>(['Cricket', 'Football', 'Basketball', 'Badminton']);
+  const [turfInfo, setTurfInfo] = useState<any>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [pricePerSlot, setPricePerSlot] = useState('500');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [bookingResult, setBookingResult] = useState<{
@@ -36,7 +38,15 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
 
   useEffect(() => {
     fetchSports();
+    fetchTurfInfo();
   }, []);
+
+  // Update price when turfInfo is loaded
+  useEffect(() => {
+    if (turfInfo?.defaultPrice) {
+      setPricePerSlot(turfInfo.defaultPrice.toString());
+    }
+  }, [turfInfo]);
 
   const fetchSports = async () => {
     // Check cache first
@@ -64,6 +74,18 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
       }
     } catch (error) {
       console.error('Error fetching sports:', error);
+    }
+  };
+
+  const fetchTurfInfo = async () => {
+    try {
+      const response = await fetch('/api/settings');
+      if (response.ok) {
+        const data = await response.json();
+        setTurfInfo(data);
+      }
+    } catch (error) {
+      console.error('Error fetching turf info:', error);
     }
   };
 
@@ -179,7 +201,7 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
           endTime: endDateTime.toISOString(),
           recurringDays: selectedDays,
           recurringEndDate: new Date(endDate).toISOString(),
-          charge: 500, // Default price, can be customized
+          charge: parseFloat(pricePerSlot) || 500,
           notes: `Sport: ${selectedSport} | Permanent Booking (${selectedTimeSlots.length} slot${selectedTimeSlots.length > 1 ? 's' : ''})`,
         }),
       });
@@ -269,6 +291,19 @@ export default function GroupBooking({ onBack }: GroupBookingProps) {
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 placeholder="Enter phone number"
+                className="w-full p-4 text-base"
+              />
+            </div>
+
+            {/* Price per slot */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price per Slot (₹)</label>
+              <Input
+                type="number"
+                step="0.01"
+                value={pricePerSlot}
+                onChange={(e) => setPricePerSlot(e.target.value)}
+                placeholder="Enter price per slot"
                 className="w-full p-4 text-base"
               />
             </div>

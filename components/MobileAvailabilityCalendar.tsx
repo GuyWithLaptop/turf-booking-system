@@ -41,6 +41,13 @@ export default function MobileAvailabilityCalendar() {
     notes: '',
   });
 
+  // Update price when turfInfo is loaded
+  useEffect(() => {
+    if (turfInfo?.defaultPrice) {
+      setFormData(prev => ({ ...prev, price: turfInfo.defaultPrice.toString() }));
+    }
+  }, [turfInfo]);
+
   useEffect(() => {
     fetchBookings();
     fetchSports();
@@ -308,7 +315,7 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
             customerPhone: formData.customerPhone,
             startTime: slot.startTime.toISOString(),
             endTime: slot.endTime.toISOString(),
-            charge: parseInt(formData.price) - parseInt(formData.discount || '0'),
+            charge: parseFloat(formData.price) - parseFloat(formData.discount || '0'),
             status: 'CONFIRMED',
               notes: `Sport: ${selectedSport} | Advance: ${formData.advance}${formData.notes ? ' | ' + formData.notes : ''}`,
             }),
@@ -333,7 +340,7 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
           customerPhone: formData.customerPhone,
           startTime: selectedSlots[0].startTime,
           endTime: selectedSlots[selectedSlots.length - 1].endTime,
-          charge: (parseInt(formData.price) - parseInt(formData.discount || '0')) * selectedSlots.length,
+          charge: (parseFloat(formData.price) - parseFloat(formData.discount || '0')) * selectedSlots.length,
           advance: formData.advance,
           discount: formData.discount,
           sport: selectedSport,
@@ -665,6 +672,7 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
                     <span className="absolute left-3 top-3 text-gray-500">₹</span>
                     <input
                       type="number"
+                      step="0.01"
                       placeholder="Price"
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
@@ -764,7 +772,7 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Total charge</span>
-                        <span className="font-medium">Rs. {(parseInt(formData.price || '0') - parseInt(formData.discount || '0')) * selectedSlots.length}</span>
+                        <span className="font-medium">Rs. {(parseFloat(formData.price || '0') - parseFloat(formData.discount || '0')) * selectedSlots.length}</span>
                       </div>
                     </div>
                   </div>

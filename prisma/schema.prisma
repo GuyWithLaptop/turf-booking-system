@@ -151,7 +151,7 @@ model Sport {
 
 model AppSettings {
   id           Int      @id @default(1)
-  defaultPrice Int      @default(500)
+  defaultPrice Float    @default(500)
   turfName     String   @default("FS Sports Club")
   turfAddress  String   @default("")
   turfNotes    String   @default("")
