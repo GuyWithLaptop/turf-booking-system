@@ -179,9 +179,11 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
 
         const booking = bookings.find((b) => {
           const bookingStart = new Date(b.startTime);
+          const bookingEnd = new Date(b.endTime);
+          // Check if booking overlaps with this slot
           return (
-            isSameDay(bookingStart, selectedDate) &&
-            bookingStart.getHours() === hour &&
+            bookingStart < slotEnd &&
+            bookingEnd > slotStart &&
             b.status !== 'CANCELLED'
           );
         });
@@ -212,9 +214,11 @@ ${turfInfo?.turfPhone ? `\n📞 ${turfInfo.turfPhone}` : ''}`;
 
         const booking = bookings.find((b) => {
           const bookingStart = new Date(b.startTime);
+          const bookingEnd = new Date(b.endTime);
+          // Check if booking overlaps with this slot
           return (
-            isSameDay(bookingStart, nextDay) &&
-            bookingStart.getHours() === hour &&
+            bookingStart < slotEnd &&
+            bookingEnd > slotStart &&
             b.status !== 'CANCELLED'
           );
         });
